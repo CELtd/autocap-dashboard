@@ -2,9 +2,19 @@
 
 A real-time monitoring dashboard for the AutoCap system on Filecoin. This application tracks round status, participant registrations, DataCap allocations, and FIL burning events using on-chain data and Goldsky.
 
-## 🚀 Features
+## � What is Autocap?
+
+Autocap is an experimental system for transparently distributing **DataCap** to Filecoin Storage Providers based on their network contribution—specifically, the amount of FIL burned via **Filecoin Onchain Cloud's Filecoin Pay Contracts**.
+
+**Key Mechanics:**
+- **Participation**: Open to all providers; register directly via the dashboard UI with a nominal registration fee.
+- **Fair Allocation**: DataCap is distributed proportionally based on the ratio of FIL burned by each participant during the round duration.
+- **Iterative Design**: Initial rounds track total FIL burned by participant addresses. Future versions will refine this to only count payments directly linked to sealed sectors.
+
+## �🚀 Features
 
 - **Real-time Round Monitoring**: View current, past, and upcoming rounds with live status updates.
+- **Direct Round Registration**: Participants can register for active rounds directly through the UI by connecting their Filecoin wallet.
 - **Smart Data Visualization**:
   - Live countdown timers for round start/end.
   - Total FIL burned tracking with smart unit formatting (automatically scales from nFIL to FIL).
