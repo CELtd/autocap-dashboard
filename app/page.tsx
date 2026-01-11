@@ -7,8 +7,11 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useDashboard } from "@/hooks/useDashboard";
 import { RoundStatus } from "@/types";
 import { config } from "@/lib/constants";
+import { useState } from "react";
+import { RegisterModal } from "@/components/dashboard/RegisterModal";
 
 export default function Dashboard() {
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
   const {
     currentRoundId,
     selectedRoundId,
@@ -72,7 +75,17 @@ export default function Dashboard() {
               participants={participants}
               roundStatus={selectedRound?.status ?? RoundStatus.Upcoming}
               isLoading={isLoading}
+              onRegister={() => setShowRegisterModal(true)}
             />
+
+            {selectedRound && (
+              <RegisterModal
+                isOpen={showRegisterModal}
+                onClose={() => setShowRegisterModal(false)}
+                roundId={selectedRound.id}
+                registrationFee={selectedRound.registrationFee}
+              />
+            )}
           </>
         )}
       </div>

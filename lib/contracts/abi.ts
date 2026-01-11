@@ -80,6 +80,16 @@ export const autoCapAbi = [
     outputs: [{ name: "", type: "uint64" }],
   },
   {
+    name: "register",
+    type: "function",
+    stateMutability: "payable",
+    inputs: [
+      { name: "_roundId", type: "uint256" },
+      { name: "_datacapActorId", type: "uint64" },
+    ],
+    outputs: [],
+  },
+  {
     name: "paymentContract",
     type: "function",
     stateMutability: "view",
