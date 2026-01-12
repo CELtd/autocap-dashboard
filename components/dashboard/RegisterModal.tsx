@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { formatFil } from "@/lib/utils/format";
-import { useConnection, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from "wagmi";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { autoCapContract } from "@/lib/contracts/config";
 import { Loader2, X } from "lucide-react";
@@ -15,7 +15,7 @@ interface RegisterModalProps {
 }
 
 export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: RegisterModalProps) {
-    const { address, isConnected } = useConnection();
+    const { address, isConnected } = useAccount();
     const [actorId, setActorId] = useState("");
     const [isSimulating, setIsSimulating] = useState(false);
     const [simulationError, setSimulationError] = useState<Error | null>(null);
@@ -23,7 +23,7 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
     const publicClient = usePublicClient();
 
     const {
-        mutateAsync: register,
+        writeContractAsync: register,
         data: hash,
         isPending: isWritePending,
         error: writeError,
