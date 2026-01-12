@@ -3,7 +3,6 @@
 import { RoundInfo } from "@/components/dashboard/RoundInfo";
 import { RoundSelector } from "@/components/dashboard/RoundSelector";
 import { ParticipantTable } from "@/components/dashboard/ParticipantTable";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useDashboard } from "@/hooks/useDashboard";
 import { RoundStatus } from "@/types";
 import { config } from "@/lib/constants";
@@ -25,25 +24,17 @@ export default function Dashboard() {
   } = useDashboard();
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8 transition-colors duration-200">
+    <main className="flex-grow bg-gray-50 dark:bg-gray-950 py-8 transition-colors duration-200">
       <div className="max-w-5xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex justify-end mb-4">
-            <ThemeToggle />
-          </div>
-          <div className="text-center">
-            <h1 className="text-3xl font-semibold text-gray-900 dark:text-gray-100 mb-4">AutoCap Dashboard</h1>
-
-            {/* Round Selector */}
-            <RoundSelector
-              rounds={allRounds}
-              selectedRoundId={selectedRoundId}
-              currentRoundId={currentRoundId}
-              onSelectRound={setSelectedRoundId}
-              isLoading={isLoading && allRounds.length === 0}
-            />
-          </div>
+        {/* Round Selector Section */}
+        <div className="mb-10 text-center">
+          <RoundSelector
+            rounds={allRounds}
+            selectedRoundId={selectedRoundId}
+            currentRoundId={currentRoundId}
+            onSelectRound={setSelectedRoundId}
+            isLoading={isLoading && allRounds.length === 0}
+          />
         </div>
 
         {error ? (

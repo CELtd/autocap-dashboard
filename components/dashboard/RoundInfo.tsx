@@ -55,53 +55,68 @@ export function RoundInfo({ round, totalBurned, isLoading }: RoundInfoProps) {
         : "Status";
 
   return (
-    <div className="space-y-4 mb-6">
-      {/* Row 1: Status, Countdown, Participants */}
-      <div className="grid grid-cols-3 gap-4">
-        <InfoBox label="Round Status" isLoading={isLoading}>
-          <div className="flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${status.dotColor}`} />
-            <span className="font-medium">{status.label}</span>
-          </div>
-        </InfoBox>
+    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+      {/* Round Status */}
+      <InfoBox label="Round Status" isLoading={isLoading}>
+        <div className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full ${status.dotColor}`} />
+          <span className="font-medium">{status.label}</span>
+        </div>
+      </InfoBox>
 
-        <InfoBox label={countdownLabel} isLoading={isLoading}>
-          {round && (
-            <div className="font-mono font-semibold text-lg">
+      {/* Countdown */}
+      <InfoBox label={countdownLabel} isLoading={isLoading}>
+        {round && (
+          <div className="flex flex-col">
+            <div className="font-mono font-semibold text-lg leading-tight">
               {round.status === RoundStatus.Closed ? (
                 <span className="text-gray-500 dark:text-gray-400">Ended</span>
               ) : (
                 <span className="text-gray-900 dark:text-gray-100">{countdownText}</span>
               )}
             </div>
-          )}
-        </InfoBox>
-
-        <InfoBox label="Participants" isLoading={isLoading}>
-          <div className="text-2xl font-semibold">{round?.participantCount ?? 0}</div>
-        </InfoBox>
-      </div>
-
-      {/* Row 2: Round DataCap, Registration Fee, Total FIL Burned */}
-      <div className="grid grid-cols-3 gap-4">
-        <InfoBox label="Round DataCap" isLoading={isLoading}>
-          <div className="text-2xl font-semibold">
-            {round ? formatDataCap(round.totalDatacap) : "0 Bytes"}
+            {targetTimestamp && (
+              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 font-mono whitespace-nowrap">
+                {new Date(targetTimestamp * 1000).toLocaleString('en-GB', {
+                  timeZone: 'UTC',
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false
+                })} GMT
+              </div>
+            )}
           </div>
-        </InfoBox>
+        )}
+      </InfoBox>
 
-        <InfoBox label="Registration Fee" isLoading={isLoading}>
-          <div className="text-2xl font-semibold">
-            {round ? formatFil(round.registrationFee, 2) : "0 FIL"}
-          </div>
-        </InfoBox>
+      {/* Participants */}
+      <InfoBox label="Participants" isLoading={isLoading}>
+        <div className="text-2xl font-semibold">{round?.participantCount ?? 0}</div>
+      </InfoBox>
 
-        <InfoBox label="Total FIL Burned" isLoading={isLoading}>
-          <div className="text-2xl font-semibold">
-            <FilDisplay attoFil={totalBurned} decimals={4} />
-          </div>
-        </InfoBox>
-      </div>
+      {/* Round DataCap */}
+      <InfoBox label="Round DataCap" isLoading={isLoading}>
+        <div className="text-2xl font-semibold">
+          {round ? formatDataCap(round.totalDatacap) : "0 Bytes"}
+        </div>
+      </InfoBox>
+
+      {/* Registration Fee */}
+      <InfoBox label="Registration Fee" isLoading={isLoading}>
+        <div className="text-2xl font-semibold">
+          {round ? formatFil(round.registrationFee, 2) : "0 FIL"}
+        </div>
+      </InfoBox>
+
+      {/* Total FIL Burned */}
+      <InfoBox label="Total FIL Burned" isLoading={isLoading}>
+        <div className="text-2xl font-semibold">
+          <FilDisplay attoFil={totalBurned} decimals={4} />
+        </div>
+      </InfoBox>
     </div>
   );
 }

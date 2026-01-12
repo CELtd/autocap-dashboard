@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { Header } from "@/components/ui/Header";
+import { Footer } from "@/components/ui/Footer";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { Web3Provider } from "@/components/providers/Web3Provider";
@@ -16,8 +18,12 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AutoCap Dashboard",
-  description: "AutoCap round monitoring dashboard",
+  title: "Filecoin Autocap",
+  description: "Filecoin Autocap round monitoring dashboard",
+  icons: {
+    icon: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export default function RootLayout({
@@ -28,10 +34,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${jetbrainsMono.variable}`}>
-        {/* Order of providers is important as theme provider lead to hydration issues if placed before query provider */}
         <QueryProvider>
           <ThemeProvider>
-            <Web3Provider>{children}</Web3Provider>
+            <Web3Provider>
+              <div className="flex flex-col min-h-screen">
+                <Header />
+                <div className="flex-grow">
+                  {children}
+                </div>
+                <Footer />
+              </div>
+            </Web3Provider>
           </ThemeProvider>
         </QueryProvider>
       </body>

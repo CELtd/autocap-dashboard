@@ -1,10 +1,10 @@
-# AutoCap Dashboard
+# Filecoin Autocap
 
-A real-time monitoring dashboard for the AutoCap system on Filecoin. This application tracks round status, participant registrations, DataCap allocations, and FIL burning events using on-chain data and Goldsky.
+A real-time monitoring dashboard for the Filecoin Autocap system. This application tracks round status, participant registrations, DataCap allocations, and FIL burning events using on-chain data and Goldsky.
 
-## � What is Autocap?
+##  What is Filecoin Autocap?
 
-Autocap is an experimental system for transparently distributing **DataCap** to Filecoin Storage Providers based on their network contribution—specifically, the amount of FIL burned via **Filecoin Onchain Cloud's Filecoin Pay Contracts**.
+Filecoin Autocap is an experimental system for transparently distributing **DataCap** to Filecoin Storage Providers based on their network contribution—specifically, the amount of FIL burned via **Filecoin Onchain Cloud's Filecoin Pay Contracts**.
 
 **Key Mechanics:**
 - **Participation**: Open to all providers; register directly via the dashboard UI with a nominal registration fee.
@@ -52,7 +52,7 @@ Autocap is an experimental system for transparently distributing **DataCap** to 
 
    ```bash
    # Contract Configuration (Required)
-   NEXT_PUBLIC_AUTOCAP_ADDRESS=0x...          # Address of the AutoCap contract
+   NEXT_PUBLIC_AUTOCAP_ADDRESS=0x...          # Address of the Filecoin Autocap contract
 
    # RPC Configuration (Optional - defaults to Glif)
    NEXT_PUBLIC_RPC_URL=https://api.calibration.node.glif.io/rpc/v1
