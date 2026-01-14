@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { formatFil } from "@/lib/utils/format";
+import { formatFil, truncateAddress } from "@/lib/utils/format";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { autoCapContract } from "@/lib/contracts/config";
-import { Loader2, X } from "lucide-react";
+import { Loader2, X, Wallet } from "lucide-react";
+import { parseContractError } from "@/lib/utils/errors";
 
 interface RegisterModalProps {
     isOpen: boolean;
@@ -63,11 +64,8 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
             await register(request);
         } catch (err) {
             console.error("Registration failed:", err);
-            if (err instanceof Error) {
-                setSimulationError(err);
-            } else {
-                setSimulationError(new Error("Transaction simulation failed"));
-            }
+            const errorMessage = parseContractError(err);
+            setSimulationError(new Error(errorMessage));
         } finally {
             setIsSimulating(false);
         }
@@ -97,8 +95,14 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full p-6 relative animate-in fade-in zoom-in-95 duration-200">
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={handleClose}
+        >
+            <div 
+                className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full p-6 relative animate-in fade-in zoom-in-95 duration-200"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <button
                     onClick={handleClose}
                     className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -131,6 +135,29 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
                         </h2>
 
                         <div className="space-y-4">
+                            {isConnected && address && (
+                                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Wallet className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                            <span className="text-sm text-gray-600 dark:text-gray-300">
+                                                Connected: <span className="font-mono font-medium">{truncateAddress(address)}</span>
+                                            </span>
+                                        </div>
+                                        <ConnectButton.Custom>
+                                            {({ openAccountModal }) => (
+                                                <button
+                                                    onClick={openAccountModal}
+                                                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                                                >
+                                                    Change
+                                                </button>
+                                            )}
+                                        </ConnectButton.Custom>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-100 dark:border-blue-800">
                                 <p className="text-sm text-blue-800 dark:text-blue-300">
                                     Registration Fee: <span className="font-semibold">{formatFil(registrationFee, 2)}</span>
@@ -152,13 +179,25 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
                                     Enter the numeric Actor ID you wish to receive Datacap on. Your connected wallet will be tracked for burning FIL.
                                 </p>
+                                <p className="text-xs text-orange-600 dark:text-orange-400">
+                                    Note: You must burn FIL through{" "}
+                                    <a
+                                        href="https://pay.filecoin.cloud"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="font-semibold underline hover:text-orange-700 dark:hover:text-orange-300"
+                                    >
+                                        Filecoin Pay
+                                    </a>{" "}
+                                    during the round to receive Datacap.
+                                </p>
                             </div>
 
                             {/* Simulation error */}
                             {simulationError && (
                                 <div className="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-md text-sm break-words">
                                     <p className="font-semibold mb-1">Transaction would fail</p>
-                                    <p>{simulationError.message?.split('.')[0] || "Transaction simulation failed"}</p>
+                                    <p>{simulationError.message || "Transaction simulation failed"}</p>
                                 </div>
                             )}
 
