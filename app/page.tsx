@@ -5,9 +5,10 @@ import { RoundSelector } from "@/components/dashboard/RoundSelector";
 import { ParticipantTable } from "@/components/dashboard/ParticipantTable";
 import { useDashboard } from "@/hooks/useDashboard";
 import { RoundStatus } from "@/types";
-import { config } from "@/lib/constants";
+import { config, MIN_DATACAP_ALLOCATION } from "@/lib/constants";
 import { useState } from "react";
 import { RegisterModal } from "@/components/dashboard/RegisterModal";
+import { AlertTriangle } from "lucide-react";
 
 export default function Dashboard() {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -60,6 +61,21 @@ export default function Dashboard() {
               totalBurned={totalBurned}
               isLoading={isLoading}
             />
+
+            {/* Minimum Allocation Warning */}
+            <div className="my-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                    Minimum Allocation: 1 MiB ({MIN_DATACAP_ALLOCATION.toLocaleString()} bytes)
+                  </p>
+                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                    Participants with allocations below 1 MiB will not receive DataCap as this is the minimum enforced by the Filecoin Verified Registry.
+                  </p>
+                </div>
+              </div>
+            </div>
 
             {/* Participants Table */}
             <ParticipantTable

@@ -20,3 +20,10 @@ export const config = {
 // Filecoin constants
 export const FILECOIN_GENESIS = new Date("2022-11-01T18:13:00Z");
 export const SECONDS_PER_EPOCH = 30;
+
+// Safe & MetaAllocator constants (Filecoin Calibration)
+export const SAFE_ADDRESS = "0xdb837774Fb9715F1AE70EFAfF2D1D4e76de8884b";
+export const METAALLOCATOR_ADDRESS = "0xeE44Fa7Af2A8ad8aB222e4401EF8Ed5A8e18bD09";
+export const LOTUS_RPC_URL = "https://calibration.filecoin.chain.love/rpc/v1";
+export const MIN_DATACAP_ALLOCATION = 1048576; // 1 MiB in bytes
+export const CHAIN_ID = 314159;
