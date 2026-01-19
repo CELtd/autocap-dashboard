@@ -8,6 +8,7 @@ import {
   type ParticipantAllocation,
 } from "@/lib/api/rounds";
 import { RoundStatus } from "@/types";
+import { datacapToBytes } from "@/lib/utils/format";
 
 /**
  * Response structure for the latest round API
@@ -34,13 +35,16 @@ export async function GET() {
     const round = await getRoundData(roundId);
 
     // 3. Build response with bigint values as strings
+    // Convert totalDatacap from 18-decimal format to actual bytes
+    const totalDatacapBytes = datacapToBytes(round.totalDatacap);
+
     const response: LatestRoundResponse = {
       round: {
         id: round.id,
         status: round.status,
         startTime: round.startTime,
         endTime: round.endTime,
-        totalDatacap: round.totalDatacap.toString(),
+        totalDatacap: totalDatacapBytes.toString(),
         registrationFee: round.registrationFee.toString(),
         participantCount: round.participantCount,
       },

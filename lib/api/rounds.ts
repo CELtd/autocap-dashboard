@@ -11,7 +11,7 @@ import {
   calculateTotalFromMap,
   calculateExpectedAllocation,
 } from "../utils/calculations";
-import { timestampToEpoch } from "../utils/format";
+import { timestampToEpoch, datacapToBytes } from "../utils/format";
 import { config } from "../constants";
 import { RoundStatus, type Round, type SubgraphResponse } from "@/types";
 
@@ -174,16 +174,19 @@ export async function getParticipantAllocations(
     const participantBurn = burnMap.get(addressLower) || 0n;
     const datacapActorId = datacapActorIds.get(addressLower) || 0n;
 
-    const allocatedDatacap = calculateExpectedAllocation(
+    const allocatedDatacapRaw = calculateExpectedAllocation(
       participantBurn,
       round.totalDatacap,
       totalBurn
     );
 
+    // Convert from 18-decimal format to actual bytes
+    const allocatedDatacapBytes = datacapToBytes(allocatedDatacapRaw);
+
     return {
       address,
       datacapActorId: `f0${datacapActorId}`,
-      allocatedDatacap: allocatedDatacap.toString(),
+      allocatedDatacap: allocatedDatacapBytes.toString(),
     };
   });
 
