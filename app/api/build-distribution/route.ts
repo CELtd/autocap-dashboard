@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { encodeFunctionData } from "viem";
-import { filecoinIdToClientAddressBytes, buildClientAddressBytes } from "@/lib/api/lotus";
+import { filecoinIdToClientAddressBytes, lookupRobustAddress } from "@/lib/api/lotus";
 import { metaAllocatorAbi } from "@/lib/contracts/metaAllocatorAbi";
 import {
   METAALLOCATOR_ADDRESS,
@@ -35,6 +35,8 @@ interface SafeTransaction {
   meta: {
     recipientAddress: string;
     datacapActorId: string;
+    datacapActorIdOriginal: string;
+    robustAddress: string;
     clientAddressBytes: string;
     allocatedDatacap: string;
     allocatedDatacapOriginal: string;
@@ -55,8 +57,7 @@ interface BuildDistributionResponse {
   skipped: SkippedAllocation[];
   totalDatacapToDistribute: string;
   testMode: boolean;
-  testRecipientOverride: boolean;
-  testRecipientAddress: string | null;
+  testOverrideActorId: string | null;
   testInjectExtraWinner: boolean;
 }
 
@@ -68,15 +69,14 @@ interface BuildDistributionResponse {
 const TEST_MODE = true;
 const TEST_ALLOCATION_AMOUNT = BigInt(MIN_DATACAP_ALLOCATION); // 1 MiB
 
-// TEST_RECIPIENT_OVERRIDE: Skip Lotus RPC conversion and use hardcoded address
-// This allows testing the Safe transaction building/signing flow without
-// relying on Lotus RPC. ALL recipients will receive DC at this address.
-const TEST_RECIPIENT_OVERRIDE = true;
-const TEST_RECIPIENT_ADDRESS = "0xa45882Cc3594d79ddeA910a0376f7Ff2e521d3fd";
+// TEST_OVERRIDE_ACTOR_ID: Override the recipient actor ID for all allocations
+// Uses Lotus RPC to convert this f0 address to clientAddressBytes
+// Set to null to use the real actor IDs from allocation data
+const TEST_OVERRIDE_ACTOR_ID: string | null = "f01433";
 
 // TEST_INJECT_EXTRA_WINNER: Add a fake second winner to test batch transactions
 // This creates 2 transactions in the Safe batch to verify batching works.
-const TEST_INJECT_EXTRA_WINNER = true;
+const TEST_INJECT_EXTRA_WINNER = false;
 const TEST_EXTRA_WINNER_ACTOR_ID = "f099999"; // Fake actor ID for display
 
 // =============================================================================
@@ -144,23 +144,15 @@ export async function GET() {
       }
 
       try {
-        // Convert Filecoin ID to clientAddressBytes
-        // In TEST_RECIPIENT_OVERRIDE mode, skip Lotus RPC and use hardcoded address
-        let clientAddressBytes: `0x${string}`;
-        let resolvedAddress: string;
+        // Determine which actor ID to use
+        // In TEST_OVERRIDE_ACTOR_ID mode, use the test actor ID instead of the real one
+        const actorIdToUse = TEST_OVERRIDE_ACTOR_ID ?? allocation.datacapActorId;
 
-        if (TEST_RECIPIENT_OVERRIDE) {
-          // ⚠️ TEST MODE: Using hardcoded recipient address
-          // This bypasses the Lotus RPC conversion for testing Safe tx flow
-          clientAddressBytes = buildClientAddressBytes(TEST_RECIPIENT_ADDRESS);
-          resolvedAddress = TEST_RECIPIENT_ADDRESS;
-        } else {
-          // Production: Convert f0... address via Lotus RPC
-          clientAddressBytes = await filecoinIdToClientAddressBytes(
-            allocation.datacapActorId
-          );
-          resolvedAddress = allocation.address;
-        }
+        // Convert Filecoin ID to clientAddressBytes (local encoding, no RPC)
+        const clientAddressBytes = await filecoinIdToClientAddressBytes(actorIdToUse);
+
+        // Lookup robust address via Lotus RPC for display
+        const robustAddress = await lookupRobustAddress(actorIdToUse);
 
         // Use test amount if in test mode, otherwise use actual allocation
         const amountToDistribute = TEST_MODE ? TEST_ALLOCATION_AMOUNT : allocatedDatacap;
@@ -177,8 +169,10 @@ export async function GET() {
           value: "0",
           data: calldata,
           meta: {
-            recipientAddress: resolvedAddress,
-            datacapActorId: allocation.datacapActorId,
+            recipientAddress: allocation.address,
+            datacapActorId: actorIdToUse,
+            datacapActorIdOriginal: allocation.datacapActorId,
+            robustAddress: robustAddress,
             clientAddressBytes: clientAddressBytes,
             allocatedDatacap: amountToDistribute.toString(),
             allocatedDatacapOriginal: allocatedDatacap.toString(),
@@ -196,7 +190,9 @@ export async function GET() {
 
     // 4. Inject extra test winner for batch transaction testing
     if (TEST_INJECT_EXTRA_WINNER) {
-      const clientAddressBytes = buildClientAddressBytes(TEST_RECIPIENT_ADDRESS);
+      const actorIdForExtra = TEST_OVERRIDE_ACTOR_ID ?? TEST_EXTRA_WINNER_ACTOR_ID;
+      const clientAddressBytes = await filecoinIdToClientAddressBytes(actorIdForExtra);
+      const robustAddress = await lookupRobustAddress(actorIdForExtra);
       const amountToDistribute = TEST_ALLOCATION_AMOUNT;
 
       const calldata = encodeFunctionData({
@@ -210,8 +206,10 @@ export async function GET() {
         value: "0",
         data: calldata,
         meta: {
-          recipientAddress: TEST_RECIPIENT_ADDRESS,
-          datacapActorId: TEST_EXTRA_WINNER_ACTOR_ID,
+          recipientAddress: "injected-test-winner",
+          datacapActorId: actorIdForExtra,
+          datacapActorIdOriginal: TEST_EXTRA_WINNER_ACTOR_ID,
+          robustAddress: robustAddress,
           clientAddressBytes: clientAddressBytes,
           allocatedDatacap: amountToDistribute.toString(),
           allocatedDatacapOriginal: "0", // Injected, no original
@@ -231,8 +229,7 @@ export async function GET() {
       skipped,
       totalDatacapToDistribute: totalDatacapToDistribute.toString(),
       testMode: TEST_MODE,
-      testRecipientOverride: TEST_RECIPIENT_OVERRIDE,
-      testRecipientAddress: TEST_RECIPIENT_OVERRIDE ? TEST_RECIPIENT_ADDRESS : null,
+      testOverrideActorId: TEST_OVERRIDE_ACTOR_ID,
       testInjectExtraWinner: TEST_INJECT_EXTRA_WINNER,
     };
 

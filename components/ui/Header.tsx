@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { BookOpen, HelpCircle } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -12,7 +13,7 @@ export function Header() {
         <header className="w-full border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 sticky top-0 z-40 transition-colors duration-200">
             <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
                 {/* Brand/Logo Section */}
-                <div className="flex items-center gap-3">
+                <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                     <img
                         src="/logo.svg"
                         alt="Filecoin Autocap Logo"
@@ -21,7 +22,7 @@ export function Header() {
                     <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 hidden sm:block">
                         Filecoin Autocap
                     </h1>
-                </div>
+                </Link>
 
                 {/* Navigation Section */}
                 <div className="flex items-center gap-2 sm:gap-4">

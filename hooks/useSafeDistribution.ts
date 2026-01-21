@@ -9,6 +9,8 @@ import { config } from "@/lib/constants";
 interface TransactionMeta {
   recipientAddress: string;
   datacapActorId: string;
+  datacapActorIdOriginal: string;
+  robustAddress: string;
   clientAddressBytes: string;
   allocatedDatacap: string;
   allocatedDatacapOriginal: string;
@@ -35,8 +37,7 @@ interface BuildDistributionResponse {
   skipped: SkippedAllocation[];
   totalDatacapToDistribute: string;
   testMode: boolean;
-  testRecipientOverride: boolean;
-  testRecipientAddress: string | null;
+  testOverrideActorId: string | null;
   testInjectExtraWinner: boolean;
 }
 
@@ -112,9 +113,17 @@ export function useSafeDistribution(): UseSafeDistributionReturn {
     try {
       setStatus("building");
 
+      // Get the EIP-1193 provider from window (MetaMask, etc.)
+      // This is required because Safe SDK needs a proper signing provider
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const ethereum = (window as any).ethereum;
+      if (!ethereum) {
+        throw new Error("No Ethereum provider found. Please install MetaMask.");
+      }
+
       // Initialize Safe SDK with the connected wallet
       const safeSdk = await Safe.init({
-        provider: walletClient.transport,
+        provider: ethereum,
         signer: address,
         safeAddress: SAFE_ADDRESS,
       });
