@@ -3,8 +3,7 @@
 import { useState, useCallback } from "react";
 import { useAccount, useWalletClient } from "wagmi";
 import Safe from "@safe-global/protocol-kit";
-import { SAFE_ADDRESS, CHAIN_ID } from "@/lib/constants";
-import { config } from "@/lib/constants";
+import { SAFE_ADDRESS, SAFE_TX_SERVICE_URL } from "@/lib/constants";
 
 interface TransactionMeta {
   recipientAddress: string;
@@ -46,7 +45,7 @@ type DistributionStatus =
   | "fetching"
   | "building"
   | "signing"
-  | "executing"
+  | "proposing"
   | "success"
   | "error";
 
@@ -54,9 +53,9 @@ interface UseSafeDistributionReturn {
   status: DistributionStatus;
   error: Error | null;
   distributionData: BuildDistributionResponse | null;
-  txHash: string | null;
+  safeTxHash: string | null;
   fetchDistribution: () => Promise<void>;
-  executeDistribution: () => Promise<void>;
+  proposeDistribution: () => Promise<void>;
   reset: () => void;
 }
 
@@ -68,13 +67,13 @@ export function useSafeDistribution(): UseSafeDistributionReturn {
   const [error, setError] = useState<Error | null>(null);
   const [distributionData, setDistributionData] =
     useState<BuildDistributionResponse | null>(null);
-  const [txHash, setTxHash] = useState<string | null>(null);
+  const [safeTxHash, setSafeTxHash] = useState<string | null>(null);
 
   const reset = useCallback(() => {
     setStatus("idle");
     setError(null);
     setDistributionData(null);
-    setTxHash(null);
+    setSafeTxHash(null);
   }, []);
 
   const fetchDistribution = useCallback(async () => {
@@ -97,7 +96,7 @@ export function useSafeDistribution(): UseSafeDistributionReturn {
     }
   }, []);
 
-  const executeDistribution = useCallback(async () => {
+  const proposeDistribution = useCallback(async () => {
     if (!isConnected || !walletClient || !address) {
       setError(new Error("Wallet not connected"));
       setStatus("error");
@@ -105,7 +104,7 @@ export function useSafeDistribution(): UseSafeDistributionReturn {
     }
 
     if (!distributionData || distributionData.transactions.length === 0) {
-      setError(new Error("No transactions to execute"));
+      setError(new Error("No transactions to propose"));
       setStatus("error");
       return;
     }
@@ -114,14 +113,13 @@ export function useSafeDistribution(): UseSafeDistributionReturn {
       setStatus("building");
 
       // Get the EIP-1193 provider from window (MetaMask, etc.)
-      // This is required because Safe SDK needs a proper signing provider
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const ethereum = (window as any).ethereum;
       if (!ethereum) {
         throw new Error("No Ethereum provider found. Please install MetaMask.");
       }
 
-      // Initialize Safe SDK with the connected wallet
+      // Initialize Safe Protocol Kit with the connected wallet
       const safeSdk = await Safe.init({
         provider: ethereum,
         signer: address,
@@ -136,7 +134,7 @@ export function useSafeDistribution(): UseSafeDistributionReturn {
 
       if (!isOwner) {
         throw new Error(
-          "Connected wallet is not an owner of the Safe. Only Safe owners can execute transactions."
+          "Connected wallet is not an owner of the Safe. Only Safe owners can propose transactions."
         );
       }
 
@@ -154,28 +152,83 @@ export function useSafeDistribution(): UseSafeDistributionReturn {
       // Sign the transaction
       const signedTransaction = await safeSdk.signTransaction(safeTransaction);
 
-      setStatus("executing");
+      // Get the Safe transaction hash
+      const txHash = await safeSdk.getTransactionHash(signedTransaction);
+      setSafeTxHash(txHash);
 
-      // Execute the transaction (threshold = 1, so we can execute immediately)
-      const executeTxResponse =
-        await safeSdk.executeTransaction(signedTransaction);
+      setStatus("proposing");
 
-      // Get the transaction hash from the response
-      const txResponse = executeTxResponse.transactionResponse as { hash?: string; wait?: () => Promise<unknown> } | undefined;
-
-      if (txResponse?.hash) {
-        setTxHash(txResponse.hash);
+      // Get the signature
+      const signature = signedTransaction.signatures.get(address.toLowerCase());
+      if (!signature) {
+        throw new Error("Failed to get signature from signed transaction");
       }
 
-      // Wait for the transaction to be mined if wait is available
-      if (txResponse?.wait) {
-        await txResponse.wait();
+      // Propose the transaction to Safe Transaction Service using direct fetch
+      // (Safe API Kit has issues with custom txServiceUrl)
+      const txData = signedTransaction.data;
+      const proposalPayload = {
+        to: txData.to,
+        value: txData.value,
+        data: txData.data || "0x",
+        operation: txData.operation,
+        safeTxGas: txData.safeTxGas,
+        baseGas: txData.baseGas,
+        gasPrice: txData.gasPrice,
+        gasToken: txData.gasToken,
+        refundReceiver: txData.refundReceiver,
+        nonce: txData.nonce,
+        contractTransactionHash: txHash,
+        sender: address,
+        signature: signature.data,
+      };
+
+      console.log("Proposing to:", `${SAFE_TX_SERVICE_URL}/api/v1/safes/${SAFE_ADDRESS}/multisig-transactions/`);
+      console.log("Payload:", proposalPayload);
+
+      const response = await fetch(
+        `${SAFE_TX_SERVICE_URL}/api/v1/safes/${SAFE_ADDRESS}/multisig-transactions/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(proposalPayload),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Safe TX Service error:", response.status, errorText);
+        throw new Error(`Failed to propose transaction: ${response.status} - ${errorText}`);
       }
 
       setStatus("success");
-    } catch (err) {
-      console.error("Distribution execution failed:", err);
-      setError(err instanceof Error ? err : new Error("Unknown error"));
+    } catch (err: unknown) {
+      console.error("Distribution proposal failed:", err);
+
+      // Extract error message from various error formats
+      let errorMessage = "Unknown error";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === "object" && err !== null) {
+        // Handle API errors that might have different structures
+        const errObj = err as Record<string, unknown>;
+        if (errObj.message) {
+          errorMessage = String(errObj.message);
+        } else if (errObj.reason) {
+          errorMessage = String(errObj.reason);
+        } else if (errObj.data && typeof errObj.data === "object") {
+          const data = errObj.data as Record<string, unknown>;
+          errorMessage = data.message ? String(data.message) : JSON.stringify(errObj.data);
+        } else {
+          errorMessage = JSON.stringify(err);
+        }
+      } else if (typeof err === "string") {
+        errorMessage = err;
+      }
+
+      setError(new Error(errorMessage));
       setStatus("error");
     }
   }, [isConnected, walletClient, address, distributionData]);
@@ -184,9 +237,9 @@ export function useSafeDistribution(): UseSafeDistributionReturn {
     status,
     error,
     distributionData,
-    txHash,
+    safeTxHash,
     fetchDistribution,
-    executeDistribution,
+    proposeDistribution,
     reset,
   };
 }

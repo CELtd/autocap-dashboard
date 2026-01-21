@@ -27,3 +27,5 @@ export const METAALLOCATOR_ADDRESS = "0xeE44Fa7Af2A8ad8aB222e4401EF8Ed5A8e18bD09
 export const LOTUS_RPC_URL = "https://calibration.filecoin.chain.love/rpc/v1";
 export const MIN_DATACAP_ALLOCATION = 1048576; // 1 MiB in bytes
 export const CHAIN_ID = 314159;
+// Safe Transaction Service URL for Filecoin Calibration
+export const SAFE_TX_SERVICE_URL = "https://transaction-testnet.safe.filecoin.io";

@@ -8,43 +8,43 @@ import { formatDataCap } from "@/lib/utils/format";
 import { SAFE_ADDRESS, METAALLOCATOR_ADDRESS, MIN_DATACAP_ALLOCATION } from "@/lib/constants";
 import { Loader2, AlertTriangle, CheckCircle, ExternalLink, FlaskConical, XCircle, ShieldX } from "lucide-react";
 
-const DISTRIBUTION_STORAGE_KEY = "autocap-distributed-rounds";
+const PROPOSED_ROUNDS_STORAGE_KEY = "autocap-proposed-rounds";
 
-interface DistributedRound {
+interface ProposedRound {
   roundId: number;
-  txHash: string;
-  distributedAt: string;
+  safeTxHash: string;
+  proposedAt: string;
 }
 
-function getDistributedRounds(): DistributedRound[] {
+function getProposedRounds(): ProposedRound[] {
   if (typeof window === "undefined") return [];
   try {
-    const stored = localStorage.getItem(DISTRIBUTION_STORAGE_KEY);
+    const stored = localStorage.getItem(PROPOSED_ROUNDS_STORAGE_KEY);
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
   }
 }
 
-function saveDistributedRound(roundId: number, txHash: string): void {
+function saveProposedRound(roundId: number, safeTxHash: string): void {
   if (typeof window === "undefined") return;
   try {
-    const rounds = getDistributedRounds();
+    const rounds = getProposedRounds();
     // Check if already saved
     if (rounds.some((r) => r.roundId === roundId)) return;
     rounds.push({
       roundId,
-      txHash,
-      distributedAt: new Date().toISOString(),
+      safeTxHash,
+      proposedAt: new Date().toISOString(),
     });
-    localStorage.setItem(DISTRIBUTION_STORAGE_KEY, JSON.stringify(rounds));
+    localStorage.setItem(PROPOSED_ROUNDS_STORAGE_KEY, JSON.stringify(rounds));
   } catch {
     // Ignore localStorage errors
   }
 }
 
-function checkRoundDistributed(roundId: number): DistributedRound | null {
-  const rounds = getDistributedRounds();
+function checkRoundProposed(roundId: number): ProposedRound | null {
+  const rounds = getProposedRounds();
   return rounds.find((r) => r.roundId === roundId) || null;
 }
 
@@ -70,15 +70,15 @@ export default function DistributePage() {
     status,
     error,
     distributionData,
-    txHash,
+    safeTxHash,
     fetchDistribution,
-    executeDistribution,
+    proposeDistribution,
     reset,
   } = useSafeDistribution();
 
   const [accessStatus, setAccessStatus] = useState<AccessStatus>("not_connected");
   const [hasConfirmedConnection, setHasConfirmedConnection] = useState(false);
-  const [previousDistribution, setPreviousDistribution] = useState<DistributedRound | null>(null);
+  const [previousProposal, setPreviousProposal] = useState<ProposedRound | null>(null);
 
   // Check access when wallet connects/changes AND user has confirmed
   useEffect(() => {
@@ -121,28 +121,28 @@ export default function DistributePage() {
     }
   }, [accessStatus, fetchDistribution]);
 
-  // Check if this round was already distributed
+  // Check if this round was already proposed
   useEffect(() => {
     if (distributionData?.roundId) {
-      const prev = checkRoundDistributed(distributionData.roundId);
-      setPreviousDistribution(prev);
+      const prev = checkRoundProposed(distributionData.roundId);
+      setPreviousProposal(prev);
     }
   }, [distributionData?.roundId]);
 
-  // Save to localStorage when distribution succeeds
+  // Save to localStorage when proposal succeeds
   useEffect(() => {
-    if (status === "success" && txHash && distributionData?.roundId) {
-      saveDistributedRound(distributionData.roundId, txHash);
-      setPreviousDistribution({
+    if (status === "success" && safeTxHash && distributionData?.roundId) {
+      saveProposedRound(distributionData.roundId, safeTxHash);
+      setPreviousProposal({
         roundId: distributionData.roundId,
-        txHash,
-        distributedAt: new Date().toISOString(),
+        safeTxHash,
+        proposedAt: new Date().toISOString(),
       });
     }
-  }, [status, txHash, distributionData?.roundId]);
+  }, [status, safeTxHash, distributionData?.roundId]);
 
   const isLoading = status === "fetching";
-  const isExecuting = ["building", "signing", "executing"].includes(status);
+  const isProposing = ["building", "signing", "proposing"].includes(status);
   const isSuccess = status === "success";
   const isError = status === "error";
 
@@ -284,26 +284,26 @@ export default function DistributePage() {
           </div>
         </div>
 
-        {/* Already Distributed Warning */}
-        {previousDistribution && !isSuccess && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        {/* Already Proposed Warning */}
+        {previousProposal && !isSuccess && (
+          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
             <div className="flex items-start gap-3">
-              <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-red-800 dark:text-red-200">
-                  Round {previousDistribution.roundId} Already Distributed
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                  Round {previousProposal.roundId} Already Proposed
                 </p>
-                <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                  DataCap for this round was already distributed on{" "}
-                  {new Date(previousDistribution.distributedAt).toLocaleString()}.
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                  A transaction for this round was already proposed on{" "}
+                  {new Date(previousProposal.proposedAt).toLocaleString()}.
                 </p>
                 <a
-                  href={`https://calibration.filfox.info/en/tx/${previousDistribution.txHash}`}
+                  href={`https://safe.filecoin.io/transactions/queue?safe=fil:${SAFE_ADDRESS}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-red-600 dark:text-red-400 hover:underline mt-2 inline-flex items-center gap-1"
+                  className="text-sm text-amber-600 dark:text-amber-400 hover:underline mt-2 inline-flex items-center gap-1"
                 >
-                  View transaction
+                  View in Safe UI
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
@@ -337,27 +337,39 @@ export default function DistributePage() {
         )}
 
         {/* Success State */}
-        {isSuccess && txHash && (
+        {isSuccess && safeTxHash && (
           <div className="bg-green-50 dark:bg-green-900/20 border-2 border-green-300 dark:border-green-700 rounded-lg p-8 mb-6">
             <div className="text-center mb-6">
               <CheckCircle className="w-16 h-16 text-green-500 dark:text-green-400 mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-green-700 dark:text-green-300 mb-2">
-                Execution Complete!
+                Transaction Proposed!
               </h2>
               <p className="text-green-600 dark:text-green-400">
-                DataCap distribution has been successfully executed.
+                The distribution transaction has been signed and proposed to the Safe.
               </p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Transaction Hash:</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Safe Transaction Hash:</p>
+              <p className="font-mono text-sm text-green-700 dark:text-green-300 break-all">
+                {safeTxHash}
+              </p>
+            </div>
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+              <p className="text-sm text-blue-800 dark:text-blue-200 mb-2">
+                <strong>Next Steps:</strong>
+              </p>
+              <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
+                Other Safe owners need to sign this transaction before it can be executed.
+                Go to the Safe UI to collect signatures and execute.
+              </p>
               <a
-                href={`https://calibration.filfox.info/en/tx/${txHash}`}
+                href={`https://safe.filecoin.io/transactions/queue?safe=fil:${SAFE_ADDRESS}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-mono text-sm text-green-700 dark:text-green-300 hover:underline break-all flex items-center gap-1"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
               >
-                {txHash}
-                <ExternalLink className="w-4 h-4 flex-shrink-0" />
+                Open Safe UI
+                <ExternalLink className="w-4 h-4" />
               </a>
             </div>
             <div className="flex justify-center">
@@ -366,9 +378,9 @@ export default function DistributePage() {
                   reset();
                   fetchDistribution();
                 }}
-                className="px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+                className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >
-                Start New Distribution
+                Propose Another Transaction
               </button>
             </div>
           </div>
@@ -549,28 +561,28 @@ export default function DistributePage() {
               {distributionData.transactions.length === 0 ? (
                 <div className="text-center">
                   <p className="text-gray-600 dark:text-gray-400">
-                    No valid transactions to execute. All allocations were skipped.
+                    No valid transactions to propose. All allocations were skipped.
                   </p>
                 </div>
               ) : (
                 <div className="text-center">
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Execute {distributionData.transactions.length} transaction(s) as a Safe batch.
+                    Sign and propose {distributionData.transactions.length} transaction(s) as a Safe batch.
                   </p>
                   <button
-                    onClick={executeDistribution}
-                    disabled={isExecuting}
+                    onClick={proposeDistribution}
+                    disabled={isProposing}
                     className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
                   >
-                    {isExecuting ? (
+                    {isProposing ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin" />
                         {status === "building" && "Building Transaction..."}
                         {status === "signing" && "Sign in Wallet..."}
-                        {status === "executing" && "Executing..."}
+                        {status === "proposing" && "Proposing to Safe..."}
                       </>
                     ) : (
-                      "Execute Distribution"
+                      "Sign & Propose"
                     )}
                   </button>
                 </div>
