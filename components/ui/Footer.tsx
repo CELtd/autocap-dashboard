@@ -15,7 +15,7 @@ export function Footer() {
                             rel="noopener noreferrer"
                             className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium border-b border-gray-300 dark:border-gray-700"
                         >
-                            CryptoEcon Lab
+                            CryptoEconLab
                         </a>
                     </div>
                 </div>
