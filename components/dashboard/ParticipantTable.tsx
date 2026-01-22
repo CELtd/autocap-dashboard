@@ -3,6 +3,7 @@
 import { AddressLink } from "@/components/ui/AddressLink";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { FilDisplay } from "@/components/ui/FilDisplay";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { RoundStatus, type RoundParticipant } from "@/types";
 import { formatActorId, formatDataCap } from "@/lib/utils/format";
 
@@ -49,11 +50,41 @@ export function ParticipantTable({ participants, roundStatus, isLoading, onRegis
             <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-12">#</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Participant Address</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">DataCap Actor ID</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">FIL Burned</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  {allocationHeader}
+                  <span className="inline-flex items-center">
+                    Participant Address
+                    <InfoTooltip
+                      title="Participant Address"
+                      content="The wallet address that will be checked for burned FIL through a Filecoin Pay contract during the current round."
+                    />
+                  </span>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <span className="inline-flex items-center">
+                    DataCap Actor ID
+                    <InfoTooltip
+                      title="DataCap Actor ID"
+                      content="The actor ID of the wallet where the participant wants to receive DataCap won in this round."
+                    />
+                  </span>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <span className="inline-flex items-center">
+                    FIL Burned
+                    <InfoTooltip
+                      title="FIL Burned"
+                      content="Real-time tracker of the amount of FIL burned by Participant Address via a Filecoin Pay contract during the current round."
+                    />
+                  </span>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <span className="inline-flex items-center">
+                    {allocationHeader}
+                    <InfoTooltip
+                      title={allocationHeader}
+                      content="Real-time tracker of the current amount of DataCap the DataCap Actor ID will receive (if the round would complete as it is) based on the FIL burned by the Participant Address."
+                    />
+                  </span>
                 </th>
               </tr>
             </thead>
