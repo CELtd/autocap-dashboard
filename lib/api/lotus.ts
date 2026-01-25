@@ -210,9 +210,142 @@ export async function filecoinIdToEvmAddress(filecoinId: string): Promise<string
 }
 
 /**
+ * Get actor ID from an EVM address
+ *
+ * This converts an EVM address (0x...) to its corresponding Filecoin actor ID (f0...).
+ * The process:
+ * 1. Convert EVM address to f410 address using EthAddressToFilecoinAddress
+ * 2. Lookup the actor ID from the f410 address using StateLookupID
+ *
+ * @param evmAddress - The EVM address (0x...)
+ * @returns The actor ID as a string (e.g., "1433")
+ */
+export async function getActorIdFromEvmAddress(evmAddress: string): Promise<string> {
+  // Validate EVM address format
+  if (!/^0x[0-9a-fA-F]{40}$/i.test(evmAddress)) {
+    throw new Error(`Invalid EVM address format: ${evmAddress}`);
+  }
+
+  // Step 1: Convert EVM address to f410 address
+  const f410Address = await lotusRpc<string>(
+    "Filecoin.EthAddressToFilecoinAddress",
+    [evmAddress]
+  );
+
+  // Step 2: Lookup the actor ID from the f410 address
+  const idAddress = await lotusRpc<string>(
+    "Filecoin.StateLookupID",
+    [f410Address, null]
+  );
+
+  // Extract the numeric actor ID from the f0/t0 address
+  const idMatch = idAddress.match(/^[ft]0(\d+)$/i);
+  if (!idMatch) {
+    throw new Error(`Failed to extract actor ID from address: ${idAddress}`);
+  }
+
+  return idMatch[1];
+}
+
+/**
  * @deprecated Use addressToClientBytes() or encodeEvmAddress() instead
  * This function was incorrectly used for f0 addresses
  */
 export function buildClientAddressBytes(evmAddress: string): `0x${string}` {
   return encodeEvmAddress(evmAddress);
+}
+
+// =============================================================================
+// Datacap Receiver Check
+// =============================================================================
+
+/**
+ * UniversalReceiverHook method number (FRC-42 hash of "Receive")
+ * Used to check if an actor can receive datacap tokens
+ */
+export const UNIVERSAL_RECEIVER_HOOK_METHOD = 3726118371;
+
+/**
+ * Datacap actor address (f07)
+ */
+export const DATACAP_ACTOR_ADDRESS = "f07";
+
+/**
+ * Minimal CBOR-encoded UniversalReceiverParams: [0, b""]
+ * - 0x82 = 2-element array
+ * - 0x00 = Type_ = 0
+ * - 0x40 = empty byte string (payload)
+ */
+export const MINIMAL_RECEIVER_PARAMS_BASE64 = "ggBA";
+
+interface StateCallResult {
+  MsgRct: {
+    ExitCode: number;
+    Return: string | null;
+    GasUsed: number;
+  };
+  Error: string;
+}
+
+/**
+ * Check if an actor can receive datacap by making a static call to the UniversalReceiverHook
+ *
+ * This simulates what happens during a datacap transfer:
+ * - The datacap actor (f07) calls the receiver's UniversalReceiverHook method
+ * - Account/EthAccount actors have a fallback that returns success
+ * - Multisig actors have an explicit receiver hook
+ * - EVM contracts must implement handle_filecoin_method for method 3726118371
+ *
+ * @param actorId - The actor ID to check (numeric, e.g., "1433")
+ * @returns Object with canReceive boolean and optional error message
+ */
+export async function checkDatacapReceiver(
+  actorId: string
+): Promise<{ canReceive: boolean; error?: string; exitCode?: number }> {
+  try {
+    // Validate actor ID is numeric
+    if (!/^\d+$/.test(actorId)) {
+      return { canReceive: false, error: "Invalid actor ID format" };
+    }
+
+    const result = await lotusRpc<StateCallResult>("Filecoin.StateCall", [
+      {
+        Version: 0,
+        To: `f0${actorId}`,
+        From: DATACAP_ACTOR_ADDRESS,
+        Nonce: 0,
+        Value: "0",
+        GasLimit: 10000000,
+        GasFeeCap: "0",
+        GasPremium: "0",
+        Method: UNIVERSAL_RECEIVER_HOOK_METHOD,
+        Params: MINIMAL_RECEIVER_PARAMS_BASE64,
+      },
+      null, // Use latest tipset
+    ]);
+
+    const exitCode = result.MsgRct.ExitCode;
+
+    if (exitCode === 0) {
+      return { canReceive: true, exitCode };
+    }
+
+    // Provide user-friendly error messages based on exit code
+    let errorMessage: string;
+    switch (exitCode) {
+      case 22: // USR_UNHANDLED_MESSAGE
+        errorMessage = "This actor type cannot receive datacap (e.g., miner, system actor)";
+        break;
+      case 33: // EVM contract reverted
+        errorMessage = "This contract does not implement the datacap receiver hook";
+        break;
+      default:
+        errorMessage = result.Error || `Actor cannot receive datacap (exit code: ${exitCode})`;
+    }
+
+    return { canReceive: false, error: errorMessage, exitCode };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return { canReceive: false, error: `Failed to check actor: ${message}` };
+  }
 }

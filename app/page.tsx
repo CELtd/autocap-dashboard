@@ -8,10 +8,11 @@ import { RoundStatus } from "@/types";
 import { config, MIN_DATACAP_ALLOCATION } from "@/lib/constants";
 import { useState } from "react";
 import { RegisterModal } from "@/components/dashboard/RegisterModal";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, X } from "lucide-react";
 
 export default function Dashboard() {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [isWarningDismissed, setIsWarningDismissed] = useState(false);
   const {
     currentRoundId,
     selectedRoundId,
@@ -23,6 +24,10 @@ export default function Dashboard() {
     isLoading,
     error,
   } = useDashboard();
+
+  const handleDismissWarning = () => {
+    setIsWarningDismissed(true);
+  };
 
   return (
     <main className="flex-grow bg-gray-50 dark:bg-gray-950 py-8 transition-colors duration-200">
@@ -63,19 +68,28 @@ export default function Dashboard() {
             />
 
             {/* Minimum Allocation Warning */}
-            <div className="my-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                    Minimum Allocation: 1 MiB ({MIN_DATACAP_ALLOCATION.toLocaleString()} bytes)
-                  </p>
-                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                    Participants with allocations below 1 MiB will not receive DataCap as this is the minimum enforced by the Filecoin Verified Registry.
-                  </p>
+            {!isWarningDismissed && (
+              <div className="my-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg relative">
+                <button
+                  onClick={handleDismissWarning}
+                  className="absolute top-2 right-2 p-1 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-800/50 rounded transition-colors"
+                  aria-label="Dismiss warning"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="flex items-start gap-3 pr-6">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                      Minimum Allocation: 1 MiB ({MIN_DATACAP_ALLOCATION.toLocaleString()} bytes)
+                    </p>
+                    <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                      Participants with allocations below 1 MiB will not receive DataCap as this is the minimum enforced by the Filecoin Verified Registry.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Participants Table */}
             <ParticipantTable

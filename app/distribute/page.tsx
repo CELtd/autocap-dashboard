@@ -6,7 +6,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useSafeDistribution } from "@/hooks/useSafeDistribution";
 import { formatDataCap } from "@/lib/utils/format";
 import { SAFE_ADDRESS, METAALLOCATOR_ADDRESS, MIN_DATACAP_ALLOCATION } from "@/lib/constants";
-import { Loader2, AlertTriangle, CheckCircle, ExternalLink, FlaskConical, XCircle, ShieldX } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle, ExternalLink, FlaskConical, XCircle, ShieldX, X } from "lucide-react";
 
 const PROPOSED_ROUNDS_STORAGE_KEY = "autocap-proposed-rounds";
 
@@ -79,6 +79,11 @@ export default function DistributePage() {
   const [accessStatus, setAccessStatus] = useState<AccessStatus>("not_connected");
   const [hasConfirmedConnection, setHasConfirmedConnection] = useState(false);
   const [previousProposal, setPreviousProposal] = useState<ProposedRound | null>(null);
+  const [isWarningDismissed, setIsWarningDismissed] = useState(false);
+
+  const handleDismissWarning = () => {
+    setIsWarningDismissed(true);
+  };
 
   // Check access when wallet connects/changes AND user has confirmed
   useEffect(() => {
@@ -270,19 +275,28 @@ export default function DistributePage() {
         </div>
 
         {/* Warning about minimum allocation */}
-        <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                Minimum Allocation: 1 MiB ({MIN_DATACAP_ALLOCATION.toLocaleString()} bytes)
-              </p>
-              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                Allocations below 1 MiB will be skipped as they would revert on-chain.
-              </p>
+        {!isWarningDismissed && (
+          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg relative">
+            <button
+              onClick={handleDismissWarning}
+              className="absolute top-2 right-2 p-1 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-800/50 rounded transition-colors"
+              aria-label="Dismiss warning"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="flex items-start gap-3 pr-6">
+              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                  Minimum Allocation: 1 MiB ({MIN_DATACAP_ALLOCATION.toLocaleString()} bytes)
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                  Allocations below 1 MiB will be skipped as they would revert on-chain.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Already Proposed Warning */}
         {previousProposal && !isSuccess && (

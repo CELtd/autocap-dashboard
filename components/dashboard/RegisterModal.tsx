@@ -20,6 +20,9 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
     const [actorId, setActorId] = useState("");
     const [isSimulating, setIsSimulating] = useState(false);
     const [simulationError, setSimulationError] = useState<Error | null>(null);
+    const [isCheckingReceiver, setIsCheckingReceiver] = useState(false);
+    const [useWalletActorId, setUseWalletActorId] = useState(false);
+    const [isLoadingActorId, setIsLoadingActorId] = useState(false);
 
     const publicClient = usePublicClient();
 
@@ -48,10 +51,34 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
 
         resetWrite();
         setSimulationError(null);
-        setIsSimulating(true);
 
+        // Step 1: Check if actor can receive datacap
+        setIsCheckingReceiver(true);
         try {
-            // Simulate the transaction first
+            const response = await fetch("/api/check-datacap-receiver", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ actorId }),
+            });
+
+            const result = await response.json();
+            console.log("result", result);
+
+            if (!result.canReceive) {
+                setSimulationError(new Error(result.error || "This actor cannot receive datacap"));
+                setIsCheckingReceiver(false);
+                return;
+            }
+        } catch (err) {
+            setSimulationError(new Error("Failed to verify actor can receive datacap"));
+            setIsCheckingReceiver(false);
+            return;
+        }
+        setIsCheckingReceiver(false);
+
+        // Step 2: Simulate the contract call
+        setIsSimulating(true);
+        try {
             const { request } = await publicClient.simulateContract({
                 ...autoCapContract,
                 functionName: 'register',
@@ -77,10 +104,40 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
         }
     }, [txError]);
 
+    const handleUseWalletActorId = async () => {
+        if (!address) return;
+
+        setIsLoadingActorId(true);
+        setSimulationError(null);
+        try {
+            const response = await fetch("/api/get-actor-id", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ evmAddress: address }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || "Failed to get actor ID");
+            }
+
+            setActorId(result.actorId);
+            setUseWalletActorId(true);
+        } catch (err) {
+            console.error("Failed to get actor ID:", err);
+            setSimulationError(new Error(err instanceof Error ? err.message : "Failed to get actor ID from wallet"));
+        } finally {
+            setIsLoadingActorId(false);
+        }
+    };
+
     const handleClose = () => {
         resetWrite();
         setActorId("");
         setSimulationError(null);
+        setIsCheckingReceiver(false);
+        setUseWalletActorId(false);
         onClose();
     };
 
@@ -89,6 +146,8 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
             resetWrite();
             setActorId("");
             setSimulationError(null);
+            setIsCheckingReceiver(false);
+            setUseWalletActorId(false);
         }
     }, [isOpen, resetWrite]);
 
@@ -165,16 +224,31 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Datacap Actor ID
-                                </label>
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Datacap Actor ID
+                                    </label>
+                                    {isConnected && address && (
+                                        <button
+                                            type="button"
+                                            onClick={handleUseWalletActorId}
+                                            disabled={isPending || isLoadingActorId || useWalletActorId}
+                                            className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isLoadingActorId ? "Loading..." : useWalletActorId ? "Using connected wallet" : "Use connected wallet's actor ID"}
+                                        </button>
+                                    )}
+                                </div>
                                 <input
                                     type="number"
                                     value={actorId}
-                                    onChange={(e) => setActorId(e.target.value)}
+                                    onChange={(e) => {
+                                        setActorId(e.target.value);
+                                        setUseWalletActorId(false);
+                                    }}
                                     placeholder="e.g. 1000"
                                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    disabled={isPending}
+                                    disabled={isPending || (useWalletActorId && isLoadingActorId)}
                                 />
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
                                     Enter the numeric Actor ID you wish to receive Datacap on. Your connected wallet will be tracked for burning FIL.
@@ -225,7 +299,7 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
                                         </button>
                                         <button
                                             onClick={handleSubmit}
-                                            disabled={!actorId || isPending || isSimulating}
+                                            disabled={!actorId || isPending || isSimulating || isCheckingReceiver}
                                             className={`flex-1 px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 ${(txError || simulationError)
                                                 ? 'bg-red-600 hover:bg-red-700'
                                                 : 'bg-blue-600 hover:bg-blue-700'
@@ -235,6 +309,11 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
                                                 <>
                                                     <Loader2 className="w-4 h-4 animate-spin" />
                                                     {isWritePending ? 'Check Wallet...' : 'Confirming...'}
+                                                </>
+                                            ) : isCheckingReceiver ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    Verifying Actor...
                                                 </>
                                             ) : isSimulating ? (
                                                 <>
