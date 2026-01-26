@@ -32,6 +32,8 @@ interface SkippedAllocation {
 interface BuildDistributionResponse {
   roundId: number;
   roundStatus: string;
+  latestRoundId: number;
+  latestRoundStatus: string;
   transactions: SafeTransaction[];
   skipped: SkippedAllocation[];
   totalDatacapToDistribute: string;

@@ -150,6 +150,10 @@ export default function DistributePage() {
   const isProposing = ["building", "signing", "proposing"].includes(status);
   const isSuccess = status === "success";
   const isError = status === "error";
+  const showLatestRoundWarning =
+    distributionData &&
+    distributionData.latestRoundStatus !== "closed" &&
+    distributionData.latestRoundId !== distributionData.roundId;
 
   // Access Denied Screen
   if (accessStatus === "denied") {
@@ -292,6 +296,23 @@ export default function DistributePage() {
                 </p>
                 <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
                   Allocations below 1 MiB will be skipped as they would revert on-chain.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Latest round not closed warning */}
+        {distributionData && showLatestRoundWarning && (
+          <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                  Round {distributionData.latestRoundId} is not finished yet.
+                </p>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                  You can propose distribution for the latest closed round (Round {distributionData.roundId}) while the current round is still active.
                 </p>
               </div>
             </div>
@@ -441,13 +462,19 @@ export default function DistributePage() {
             {/* Round Info */}
             <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6 mb-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Round {distributionData.roundId}
+                Distributing Round {distributionData.roundId}
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
                   <p className="font-medium text-gray-900 dark:text-gray-100 capitalize">
                     {distributionData.roundStatus}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Latest Round</p>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">
+                    #{distributionData.latestRoundId} ({distributionData.latestRoundStatus})
                   </p>
                 </div>
                 <div>

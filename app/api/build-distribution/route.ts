@@ -2,29 +2,25 @@ import { NextResponse } from "next/server";
 import { encodeFunctionData } from "viem";
 import { filecoinIdToClientAddressBytes, lookupRobustAddress } from "@/lib/api/lotus";
 import { metaAllocatorAbi } from "@/lib/contracts/metaAllocatorAbi";
+import { METAALLOCATOR_ADDRESS, MIN_DATACAP_ALLOCATION } from "@/lib/constants";
 import {
-  METAALLOCATOR_ADDRESS,
-  MIN_DATACAP_ALLOCATION,
-  config,
-} from "@/lib/constants";
+  getCurrentRoundId,
+  getRoundData,
+  getParticipantAddresses,
+  getParticipantsDetails,
+  getParticipantAllocations,
+  type ParticipantAllocation,
+} from "@/lib/api/rounds";
+import { RoundStatus, type Round } from "@/types";
 
-interface LatestRoundAllocation {
-  address: string;
-  datacapActorId: string;
-  allocatedDatacap: string;
-}
-
-interface LatestRoundResponse {
-  round: {
-    id: number;
-    status: string;
-    startTime: number;
-    endTime: number;
-    totalDatacap: string;
-    registrationFee: string;
-    participantCount: number;
-  };
-  allocations: LatestRoundAllocation[] | null;
+interface RoundMeta {
+  id: number;
+  status: string;
+  startTime: number;
+  endTime: number;
+  totalDatacap: string;
+  registrationFee: string;
+  participantCount: number;
 }
 
 interface SafeTransaction {
@@ -53,6 +49,8 @@ interface SkippedAllocation {
 interface BuildDistributionResponse {
   roundId: number;
   roundStatus: string;
+  latestRoundId: number;
+  latestRoundStatus: string;
   transactions: SafeTransaction[];
   skipped: SkippedAllocation[];
   totalDatacapToDistribute: string;
@@ -66,13 +64,13 @@ interface BuildDistributionResponse {
 // =============================================================================
 
 // TEST_MODE: Override allocation amount to 1 MiB for testing
-const TEST_MODE = true;
+const TEST_MODE = false;
 const TEST_ALLOCATION_AMOUNT = BigInt(MIN_DATACAP_ALLOCATION); // 1 MiB
 
 // TEST_OVERRIDE_ACTOR_ID: Override the recipient actor ID for all allocations
 // Uses Lotus RPC to convert this f0 address to clientAddressBytes
 // Set to null to use the real actor IDs from allocation data
-const TEST_OVERRIDE_ACTOR_ID: string | null = "f01433";
+const TEST_OVERRIDE_ACTOR_ID: string | null = null;
 
 // TEST_INJECT_EXTRA_WINNER: Add a fake second winner to test batch transactions
 // This creates 2 transactions in the Safe batch to verify batching works.
@@ -83,35 +81,72 @@ const TEST_EXTRA_WINNER_ACTOR_ID = "f099999"; // Fake actor ID for display
 
 export async function GET() {
   try {
-    // 1. Fetch latest round data from our API
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : `http://localhost:${process.env.PORT || 3000}`;
+    // 1. Compute latest round and most recent closed round directly (avoid self-fetch)
+    const latestRoundId = await getCurrentRoundId();
+    const latestRoundData = await getRoundData(latestRoundId);
 
-    const latestRoundRes = await fetch(`${baseUrl}/api/latest-round`);
-    if (!latestRoundRes.ok) {
-      throw new Error("Failed to fetch latest round data");
+    let targetRoundData: Round | null =
+      latestRoundData.status === RoundStatus.Closed ? latestRoundData : null;
+
+    if (!targetRoundData) {
+      for (let id = latestRoundId - 1; id >= 1; id--) {
+        const candidate = await getRoundData(id);
+        if (candidate.status === RoundStatus.Closed) {
+          targetRoundData = candidate;
+          break;
+        }
+      }
     }
 
-    const latestRound: LatestRoundResponse = await latestRoundRes.json();
+    const latestRoundMeta: RoundMeta = {
+      id: latestRoundData.id,
+      status: latestRoundData.status,
+      startTime: latestRoundData.startTime,
+      endTime: latestRoundData.endTime,
+      totalDatacap: latestRoundData.totalDatacap.toString(),
+      registrationFee: latestRoundData.registrationFee.toString(),
+      participantCount: latestRoundData.participantCount,
+    };
 
-    // 2. Validate round is closed
-    if (latestRound.round.status !== "closed") {
-      return NextResponse.json(
-        {
-          error: "Round is not closed",
-          roundId: latestRound.round.id,
-          roundStatus: latestRound.round.status,
-        },
-        { status: 400 }
-      );
+    let targetRound: RoundMeta | null = null;
+    let allocations: ParticipantAllocation[] | null = null;
+
+    if (targetRoundData) {
+      targetRound = {
+        id: targetRoundData.id,
+        status: targetRoundData.status,
+        startTime: targetRoundData.startTime,
+        endTime: targetRoundData.endTime,
+        totalDatacap: targetRoundData.totalDatacap.toString(),
+        registrationFee: targetRoundData.registrationFee.toString(),
+        participantCount: targetRoundData.participantCount,
+      };
+
+      // Only compute allocations when the target round is closed
+      if (targetRoundData.status === RoundStatus.Closed) {
+        const addresses = await getParticipantAddresses(
+          targetRoundData.id,
+          targetRoundData.participantCount
+        );
+        const datacapActorIds = await getParticipantsDetails(
+          targetRoundData.id,
+          addresses
+        );
+        allocations = await getParticipantAllocations(
+          targetRoundData,
+          addresses,
+          datacapActorIds
+        );
+      }
     }
 
-    if (!latestRound.allocations || latestRound.allocations.length === 0) {
+    // 2. Ensure we have a closed round to distribute
+    if (!targetRound || !allocations || allocations.length === 0) {
       return NextResponse.json(
         {
-          error: "No allocations found for this round",
-          roundId: latestRound.round.id,
+          error: "No closed round available for distribution",
+          latestRoundId: latestRoundMeta.id,
+          latestRoundStatus: latestRoundMeta.status,
         },
         { status: 400 }
       );
@@ -122,7 +157,7 @@ export async function GET() {
     const skipped: SkippedAllocation[] = [];
     let totalDatacapToDistribute = 0n;
 
-    for (const allocation of latestRound.allocations) {
+    for (const allocation of allocations) {
       const allocatedDatacap = BigInt(allocation.allocatedDatacap);
 
       // Skip zero allocations
@@ -223,8 +258,10 @@ export async function GET() {
     transactions.sort((a, b) => a.data.localeCompare(b.data));
 
     const response: BuildDistributionResponse = {
-      roundId: latestRound.round.id,
-      roundStatus: latestRound.round.status,
+      roundId: targetRound.id,
+      roundStatus: targetRound.status,
+      latestRoundId: latestRoundMeta.id,
+      latestRoundStatus: latestRoundMeta.status,
       transactions,
       skipped,
       totalDatacapToDistribute: totalDatacapToDistribute.toString(),
@@ -236,10 +273,11 @@ export async function GET() {
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error building distribution:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
       {
-        error: "Failed to build distribution transactions",
-        details: error instanceof Error ? error.message : "Unknown error",
+        error: `Failed to build distribution transactions: ${message}`,
+        details: message,
       },
       { status: 500 }
     );
