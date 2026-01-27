@@ -13,6 +13,9 @@ import {
 } from "@/lib/api/rounds";
 import { RoundStatus, type Round } from "@/types";
 
+// Always compute fresh distribution data
+export const dynamic = "force-dynamic";
+
 interface RoundMeta {
   id: number;
   status: string;

@@ -10,6 +10,9 @@ import {
 import { RoundStatus, type Round } from "@/types";
 import { datacapToBytes } from "@/lib/utils/format";
 
+// Always serve fresh data; rounds change frequently
+export const dynamic = "force-dynamic";
+
 /**
  * Response structure for the latest round API
  */
