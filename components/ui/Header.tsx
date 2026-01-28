@@ -54,7 +54,7 @@ export function Header() {
                     {/* Help & Slack Section */}
                     <div className="flex items-center gap-2">
                         <a
-                            href="#" // Placeholder for Slack
+                            href="https://filecoinproject.slack.com/archives/C0AAFFY4UBT"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all shadow-sm"
