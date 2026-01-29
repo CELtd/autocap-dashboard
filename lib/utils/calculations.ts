@@ -1,32 +1,43 @@
-import type { Rail } from "@/types";
+import type { Settlement, OneTimePayment, SubgraphResponse } from "@/types";
 
 /**
- * Sum all filBurned values from settlements for a set of rails
+ * Sum all fee values from settlements and one-time payments
+ * For native FIL rails, fee = FIL burned
  */
-export function calculateTotalBurn(rails: Rail[]): bigint {
+export function calculateTotalBurn(data: SubgraphResponse): bigint {
   let total = 0n;
 
-  for (const rail of rails) {
-    for (const settlement of rail.settlements) {
-      total += BigInt(settlement.filBurned);
-    }
+  // Sum fees from settlements
+  for (const settlement of data.settlements || []) {
+    total += BigInt(settlement.fee);
+  }
+
+  // Sum fees from one-time payments
+  for (const payment of data.oneTimePayments || []) {
+    total += BigInt(payment.fee);
   }
 
   return total;
 }
 
 /**
- * Calculate burn for a specific payee from rails
+ * Calculate burn for a specific payee from settlements and one-time payments
  */
-export function calculatePayeeBurn(rails: Rail[], payee: string): bigint {
+export function calculatePayeeBurn(data: SubgraphResponse, payee: string): bigint {
   const payeeLower = payee.toLowerCase();
   let total = 0n;
 
-  for (const rail of rails) {
-    if (rail.payee?.address?.toLowerCase() === payeeLower) {
-      for (const settlement of rail.settlements) {
-        total += BigInt(settlement.filBurned);
-      }
+  // Sum fees from settlements for this payee
+  for (const settlement of data.settlements || []) {
+    if (settlement.rail?.payee?.address?.toLowerCase() === payeeLower) {
+      total += BigInt(settlement.fee);
+    }
+  }
+
+  // Sum fees from one-time payments for this payee
+  for (const payment of data.oneTimePayments || []) {
+    if (payment.rail?.payee?.address?.toLowerCase() === payeeLower) {
+      total += BigInt(payment.fee);
     }
   }
 
@@ -47,22 +58,28 @@ export function calculateExpectedAllocation(
 }
 
 /**
- * Aggregate burn data per payee from rails
+ * Aggregate burn data per payee from settlements and one-time payments
+ * For native FIL rails, fee = FIL burned
  */
-export function aggregateBurnByPayee(rails: Rail[]): Map<string, bigint> {
+export function aggregateBurnByPayee(data: SubgraphResponse): Map<string, bigint> {
   const burnMap = new Map<string, bigint>();
 
-  for (const rail of rails) {
-    const payeeAddress = rail.payee?.address?.toLowerCase();
+  // Process settlements
+  for (const settlement of data.settlements || []) {
+    const payeeAddress = settlement.rail?.payee?.address?.toLowerCase();
     if (!payeeAddress) continue;
-    
-    let existingBurn = burnMap.get(payeeAddress) || 0n;
 
-    for (const settlement of rail.settlements || []) {
-      existingBurn += BigInt(settlement.filBurned);
-    }
+    const existingBurn = burnMap.get(payeeAddress) || 0n;
+    burnMap.set(payeeAddress, existingBurn + BigInt(settlement.fee));
+  }
 
-    burnMap.set(payeeAddress, existingBurn);
+  // Process one-time payments
+  for (const payment of data.oneTimePayments || []) {
+    const payeeAddress = payment.rail?.payee?.address?.toLowerCase();
+    if (!payeeAddress) continue;
+
+    const existingBurn = burnMap.get(payeeAddress) || 0n;
+    burnMap.set(payeeAddress, existingBurn + BigInt(payment.fee));
   }
 
   return burnMap;
@@ -78,4 +95,3 @@ export function calculateTotalFromMap(burnMap: Map<string, bigint>): bigint {
   }
   return total;
 }
-

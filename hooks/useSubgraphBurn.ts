@@ -2,7 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { subgraphClient } from "@/lib/subgraph/client";
-import { GET_ALL_PARTICIPANTS_BURN, type GetAllParticipantsBurnVars } from "@/lib/subgraph/queries";
+import {
+  GET_ALL_PARTICIPANTS_BURN,
+  NATIVE_FIL_TOKEN_ADDRESS,
+  type GetAllParticipantsBurnVars,
+} from "@/lib/subgraph/queries";
 import { aggregateBurnByPayee, calculateTotalFromMap } from "@/lib/utils/calculations";
 import { config } from "@/lib/constants";
 import { timestampToEpoch } from "@/lib/utils/format";
@@ -15,6 +19,7 @@ interface BurnData {
 
 /**
  * Hook to fetch burn data from the Filecoin Pay subgraph
+ * Only fetches FIL burned from native FIL rails (token = 0x0)
  * @param payees - List of payee addresses
  * @param startTime - Round start time (Unix timestamp)
  * @param endTime - Round end time (Unix timestamp)
@@ -36,6 +41,7 @@ export function useSubgraphBurn(payees: string[], startTime?: number, endTime?: 
           payees: payees.map((p) => p.toLowerCase()),
           startEpoch: startEpoch.toString(),
           endEpoch: endEpoch.toString(),
+          nativeFilToken: NATIVE_FIL_TOKEN_ADDRESS,
         };
 
         const data = await subgraphClient.request<SubgraphResponse>(
@@ -43,7 +49,8 @@ export function useSubgraphBurn(payees: string[], startTime?: number, endTime?: 
           variables
         );
 
-        const burnByPayee = aggregateBurnByPayee(data.rails || []);
+        // aggregateBurnByPayee now handles both settlements and oneTimePayments
+        const burnByPayee = aggregateBurnByPayee(data);
         const totalBurn = calculateTotalFromMap(burnByPayee);
 
         return { burnByPayee, totalBurn };

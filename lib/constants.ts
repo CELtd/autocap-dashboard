@@ -20,6 +20,7 @@ export const config = {
 // Filecoin constants
 export const FILECOIN_GENESIS = new Date("2022-11-01T18:13:00Z");
 export const SECONDS_PER_EPOCH = 30;
+export const NATIVE_FIL_TOKEN = "0x0000000000000000000000000000000000000000";
 
 // Safe & MetaAllocator constants (Filecoin Calibration)
 export const SAFE_ADDRESS = "0xdb837774Fb9715F1AE70EFAfF2D1D4e76de8884b";

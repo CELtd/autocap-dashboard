@@ -4,6 +4,7 @@ import { multicall3 } from "../contracts/multicall3";
 import { subgraphClient } from "../subgraph/client";
 import {
   GET_ALL_PARTICIPANTS_BURN,
+  NATIVE_FIL_TOKEN_ADDRESS,
   type GetAllParticipantsBurnVars,
 } from "../subgraph/queries";
 import {
@@ -152,11 +153,12 @@ export async function getParticipantAllocations(
   const startEpoch = timestampToEpoch(round.startTime);
   const endEpoch = timestampToEpoch(round.endTime);
 
-  // Query subgraph for burn data
+  // Query subgraph for burn data (only native FIL rails)
   const variables: GetAllParticipantsBurnVars = {
     payees: addresses.map((a) => a.toLowerCase()),
     startEpoch: startEpoch.toString(),
     endEpoch: endEpoch.toString(),
+    nativeFilToken: NATIVE_FIL_TOKEN_ADDRESS,
   };
 
   const subgraphData = await subgraphClient.request<SubgraphResponse>(
@@ -164,8 +166,8 @@ export async function getParticipantAllocations(
     variables
   );
 
-  // Aggregate burn data by payee
-  const burnMap = aggregateBurnByPayee(subgraphData.rails);
+  // Aggregate burn data by payee (from settlements + oneTimePayments)
+  const burnMap = aggregateBurnByPayee(subgraphData);
   const totalBurn = calculateTotalFromMap(burnMap);
 
   // Calculate allocations for each participant
