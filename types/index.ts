@@ -24,24 +24,33 @@ export interface RoundParticipant {
   expectedAllocation: bigint;
 }
 
-// Subgraph types
-export interface Settlement {
-  filBurned: string;
-  blockNumber: string;
-}
-
+// Subgraph types - Updated for new schema
 export interface Payee {
   address: string;
 }
 
 export interface Rail {
   payee: Payee;
-  railId: string;
-  settlements: Settlement[];
 }
 
+// Settlement from subgraph (fee = FIL burned for native FIL rails)
+export interface Settlement {
+  fee: string;
+  blockNumber: string;
+  rail: Rail;
+}
+
+// One-time payment from subgraph (fee = FIL burned for native FIL rails)
+export interface OneTimePayment {
+  fee: string;
+  blockNumber: string;
+  rail: Rail;
+}
+
+// New subgraph response structure
 export interface SubgraphResponse {
-  rails: Rail[];
+  settlements: Settlement[];
+  oneTimePayments: OneTimePayment[];
 }
 
 // Dashboard state
