@@ -12,6 +12,11 @@ const nextConfig = {
         source: '/docs/:path*',
         destination: 'https://lucas-documentation.gitbook.io/filautocap-docs/:path*',
       },
+      // Handle GitBook's default paths (redirect to /docs)
+      {
+        source: '/filautocap-docs/:path*',
+        destination: 'https://lucas-documentation.gitbook.io/filautocap-docs/:path*',
+      },
     ];
   },
 };

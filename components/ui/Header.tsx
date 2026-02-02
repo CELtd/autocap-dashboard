@@ -27,15 +27,13 @@ export function Header() {
                 {/* Navigation Section */}
                 <div className="flex items-center gap-2 sm:gap-4">
                     <nav className="flex items-center gap-2 mr-2">
-                        <a
-                            href="https://hackmd.io/@LV5J5dzWRk2EDJLTFgiyJA/SyZ5IUfrbg" // Placeholder for blog post
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        <Link
+                            href="/docs"
                             className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center gap-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-900"
                         >
                             <BookOpen className="w-4 h-4" />
                             <span className="hidden md:inline">How it works</span>
-                        </a>
+                        </Link>
                         <a
                             href="https://github.com/CELtd/autocap-dashboard"
                             target="_blank"
