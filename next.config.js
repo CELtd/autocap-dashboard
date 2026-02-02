@@ -6,16 +6,11 @@ const nextConfig = {
     return [
       {
         source: '/docs',
-        destination: 'https://lucas-documentation.gitbook.io/filautocap-docs',
+        destination: 'https://lucas-documentation.gitbook.io/docs',
       },
       {
         source: '/docs/:path*',
-        destination: 'https://lucas-documentation.gitbook.io/filautocap-docs/:path*',
-      },
-      // Handle GitBook's default paths (redirect to /docs)
-      {
-        source: '/filautocap-docs/:path*',
-        destination: 'https://lucas-documentation.gitbook.io/filautocap-docs/:path*',
+        destination: 'https://lucas-documentation.gitbook.io/docs/:path*',
       },
     ];
   },
