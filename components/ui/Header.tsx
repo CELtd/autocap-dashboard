@@ -32,7 +32,7 @@ export function Header() {
                             className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center gap-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-900"
                         >
                             <BookOpen className="w-4 h-4" />
-                            <span className="hidden md:inline">How it works</span>
+                            <span className="hidden md:inline">Read the Docs</span>
                         </Link>
                         <a
                             href="https://github.com/CELtd/autocap-dashboard"

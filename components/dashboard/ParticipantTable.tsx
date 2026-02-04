@@ -52,19 +52,19 @@ export function ParticipantTable({ participants, roundStatus, isLoading, onRegis
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-12">#</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   <span className="inline-flex items-center">
-                    Participant Address
+                    Participant Burn Address
                     <InfoTooltip
-                      title="Participant Address"
-                      content="The wallet address that will be checked for burned FIL through a Filecoin Pay contract during the current round."
+                      title="Participant Burn Address"
+                      content="The wallet address that will be checked for burned FIL through a Filecoin Pay contract denominated in FIL settled during the current round."
                     />
                   </span>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   <span className="inline-flex items-center">
-                    DataCap Actor ID
+                    Participant DataCap Address
                     <InfoTooltip
-                      title="DataCap Actor ID"
-                      content="The actor ID of the wallet where the participant wants to receive DataCap won in this round."
+                      title="Participant DataCap Address"
+                      content="The Participant DataCap address is the address of the wallet where the participant wants to receive DataCap won in this round."
                     />
                   </span>
                 </th>

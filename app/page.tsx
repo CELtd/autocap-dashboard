@@ -8,11 +8,12 @@ import { RoundStatus } from "@/types";
 import { config, MIN_DATACAP_ALLOCATION } from "@/lib/constants";
 import { useState } from "react";
 import { RegisterModal } from "@/components/dashboard/RegisterModal";
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function Dashboard() {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
-  const [isWarningDismissed, setIsWarningDismissed] = useState(false);
+  const [isMinAllocationExpanded, setIsMinAllocationExpanded] = useState(false);
+  const [isFilEligibilityExpanded, setIsFilEligibilityExpanded] = useState(false);
   const {
     currentRoundId,
     selectedRoundId,
@@ -25,8 +26,12 @@ export default function Dashboard() {
     error,
   } = useDashboard();
 
-  const handleDismissWarning = () => {
-    setIsWarningDismissed(true);
+  const toggleMinAllocation = () => {
+    setIsMinAllocationExpanded(!isMinAllocationExpanded);
+  };
+
+  const toggleFilEligibility = () => {
+    setIsFilEligibilityExpanded(!isFilEligibilityExpanded);
   };
 
   return (
@@ -67,29 +72,59 @@ export default function Dashboard() {
               isLoading={isLoading}
             />
 
-            {/* Minimum Allocation Warning */}
-            {!isWarningDismissed && (
-              <div className="my-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg relative">
-                <button
-                  onClick={handleDismissWarning}
-                  className="absolute top-2 right-2 p-1 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-800/50 rounded transition-colors"
-                  aria-label="Dismiss warning"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-                <div className="flex items-start gap-3 pr-6">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                      Minimum Allocation: 1 MiB ({MIN_DATACAP_ALLOCATION.toLocaleString()} bytes)
-                    </p>
-                    <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                      Participants with allocations below 1 MiB will not receive DataCap as this is the minimum enforced by the Filecoin Verified Registry.
-                    </p>
-                  </div>
+            {/* FIL Eligibility Warning - Expandable */}
+            <div className="my-6 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-600 rounded-lg overflow-hidden">
+              <button
+                onClick={toggleFilEligibility}
+                className="w-full p-4 flex items-start gap-3 hover:bg-amber-100 dark:hover:bg-amber-800/30 transition-colors cursor-pointer"
+              >
+                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                    Important: Only Rails Denominated in FIL are eligible for DC allocation
+                  </p>
                 </div>
-              </div>
-            )}
+                {isFilEligibilityExpanded ? (
+                  <ChevronUp className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                )}
+              </button>
+              {isFilEligibilityExpanded && (
+                <div className="px-4 pb-4 pl-12">
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    Rails that are denominated in other tokens (USFDC, ...) are currently not eligible for DC via Autocap.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Minimum Allocation Warning - Expandable */}
+            <div className="my-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg overflow-hidden">
+              <button
+                onClick={toggleMinAllocation}
+                className="w-full p-4 flex items-start gap-3 hover:bg-blue-100 dark:hover:bg-blue-800/30 transition-colors cursor-pointer"
+              >
+                <AlertTriangle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    Minimum Allocation: 1 MiB ({MIN_DATACAP_ALLOCATION.toLocaleString()} bytes)
+                  </p>
+                </div>
+                {isMinAllocationExpanded ? (
+                  <ChevronUp className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                )}
+              </button>
+              {isMinAllocationExpanded && (
+                <div className="px-4 pb-4 pl-12">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    Participants with allocations below 1 MiB will not receive DataCap as this is the minimum enforced by the Filecoin Verified Registry.
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* Participants Table */}
             <ParticipantTable
