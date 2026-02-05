@@ -81,7 +81,7 @@ export default function Dashboard() {
                 <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1 text-left">
                   <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-                    Important: Only Rails Denominated in FIL are eligible for DC allocation
+                    Important: Only Filecoin Pay rails denominated in FIL are eligible for DC allocation via Autocap.
                   </p>
                 </div>
                 {isFilEligibilityExpanded ? (
@@ -91,9 +91,21 @@ export default function Dashboard() {
                 )}
               </button>
               {isFilEligibilityExpanded && (
-                <div className="px-4 pb-4 pl-12">
+                <div className="px-4 pb-4 pl-12 space-y-2">
                   <p className="text-sm text-amber-800 dark:text-amber-200">
-                    Rails that are denominated in other tokens (USFDC, ...) are currently not eligible for DC via Autocap.
+                    Rails that are denominated in other tokens (e.g. USFDC, ...) and thus do not settle the rail in FIL are currently not eligible for DC allocation via Autocap.
+                  </p>
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    For more information on which contributions are validly counted in Autocap read{' '}
+                    <a
+                      href="https://filautocap.xyz/docs/phase-2-activity"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100"
+                    >
+                      here
+                    </a>
+                    .
                   </p>
                 </div>
               )}
