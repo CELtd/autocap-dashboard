@@ -5,8 +5,9 @@ import { formatFil, truncateAddress } from "@/lib/utils/format";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { autoCapContract } from "@/lib/contracts/config";
-import { Loader2, X, Wallet } from "lucide-react";
+import { Loader2, X, Wallet, ArrowRight } from "lucide-react";
 import { parseContractError } from "@/lib/utils/errors";
+import { actorExplorerUrl } from "@/lib/constants";
 
 interface RegisterModalProps {
     isOpen: boolean;
@@ -17,7 +18,11 @@ interface RegisterModalProps {
 
 export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: RegisterModalProps) {
     const { address, isConnected } = useAccount();
+    const [inputMode, setInputMode] = useState<"actorId" | "address">("address");
     const [actorId, setActorId] = useState("");
+    const [addressInput, setAddressInput] = useState("");
+    const [resolvedActorId, setResolvedActorId] = useState<string | null>(null);
+    const [isResolving, setIsResolving] = useState(false);
     const [isSimulating, setIsSimulating] = useState(false);
     const [simulationError, setSimulationError] = useState<Error | null>(null);
     const [isCheckingReceiver, setIsCheckingReceiver] = useState(false);
@@ -46,8 +51,42 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
     const isPending = isWritePending || isConfirming;
     const txError = writeError || receiptError;
 
+    // Get the effective actor ID based on input mode
+    const getEffectiveActorId = (): string | null => {
+        if (inputMode === "actorId") return actorId || null;
+        return resolvedActorId;
+    };
+
+    const handleResolveAddress = async () => {
+        if (!addressInput.trim()) return;
+
+        setIsResolving(true);
+        setSimulationError(null);
+        setResolvedActorId(null);
+        try {
+            const response = await fetch("/api/resolve-address", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ address: addressInput.trim() }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || "Failed to resolve address");
+            }
+
+            setResolvedActorId(result.actorId);
+        } catch (err) {
+            setSimulationError(new Error(err instanceof Error ? err.message : "Failed to resolve address to actor ID"));
+        } finally {
+            setIsResolving(false);
+        }
+    };
+
     const handleSubmit = async () => {
-        if (!actorId || !publicClient || !address) return;
+        const effectiveActorId = getEffectiveActorId();
+        if (!effectiveActorId || !publicClient || !address) return;
 
         resetWrite();
         setSimulationError(null);
@@ -58,7 +97,7 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
             const response = await fetch("/api/check-datacap-receiver", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ actorId }),
+                body: JSON.stringify({ actorId: effectiveActorId }),
             });
 
             const result = await response.json();
@@ -82,7 +121,7 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
             const { request } = await publicClient.simulateContract({
                 ...autoCapContract,
                 functionName: 'register',
-                args: [BigInt(roundId), BigInt(actorId)],
+                args: [BigInt(roundId), BigInt(effectiveActorId)],
                 value: registrationFee,
                 account: address,
             });
@@ -104,37 +143,49 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
         }
     }, [txError]);
 
-    const handleUseWalletActorId = async () => {
+    const handleUseWallet = async () => {
         if (!address) return;
 
-        setIsLoadingActorId(true);
-        setSimulationError(null);
-        try {
-            const response = await fetch("/api/get-actor-id", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ evmAddress: address }),
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.error || "Failed to get actor ID");
-            }
-
-            setActorId(result.actorId);
+        if (inputMode === "address") {
+            // In address mode, just populate the field with the wallet address
+            setAddressInput(address);
+            setResolvedActorId(null);
+            setSimulationError(null);
             setUseWalletActorId(true);
-        } catch (err) {
-            console.error("Failed to get actor ID:", err);
-            setSimulationError(new Error(err instanceof Error ? err.message : "Failed to get actor ID from wallet"));
-        } finally {
-            setIsLoadingActorId(false);
+        } else {
+            // In actor ID mode, resolve directly
+            setIsLoadingActorId(true);
+            setSimulationError(null);
+            try {
+                const response = await fetch("/api/get-actor-id", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ evmAddress: address }),
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || "Failed to get actor ID");
+                }
+
+                setActorId(result.actorId);
+                setUseWalletActorId(true);
+            } catch (err) {
+                console.error("Failed to get actor ID:", err);
+                setSimulationError(new Error(err instanceof Error ? err.message : "Failed to get actor ID from wallet"));
+            } finally {
+                setIsLoadingActorId(false);
+            }
         }
     };
 
     const handleClose = () => {
         resetWrite();
         setActorId("");
+        setAddressInput("");
+        setResolvedActorId(null);
+        setInputMode("address");
         setSimulationError(null);
         setIsCheckingReceiver(false);
         setUseWalletActorId(false);
@@ -145,6 +196,9 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
         if (isOpen) {
             resetWrite();
             setActorId("");
+            setAddressInput("");
+            setResolvedActorId(null);
+            setInputMode("address");
             setSimulationError(null);
             setIsCheckingReceiver(false);
             setUseWalletActorId(false);
@@ -223,35 +277,112 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
                                 </p>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Datacap Actor ID
+                                        Datacap Recipient
                                     </label>
                                     {isConnected && address && (
                                         <button
                                             type="button"
-                                            onClick={handleUseWalletActorId}
+                                            onClick={handleUseWallet}
                                             disabled={isPending || isLoadingActorId || useWalletActorId}
                                             className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            {isLoadingActorId ? "Loading..." : useWalletActorId ? "Using connected wallet" : "Use connected wallet's actor ID"}
+                                            {isLoadingActorId ? "Loading..." : useWalletActorId ? "Using connected wallet" : "Use connected wallet"}
                                         </button>
                                     )}
                                 </div>
-                                <input
-                                    type="number"
-                                    value={actorId}
-                                    onChange={(e) => {
-                                        setActorId(e.target.value);
-                                        setUseWalletActorId(false);
-                                    }}
-                                    placeholder="e.g. 1000"
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    disabled={isPending || (useWalletActorId && isLoadingActorId)}
-                                />
+
+                                {/* Input mode toggle */}
+                                <div className="flex rounded-md border border-gray-300 dark:border-gray-700 overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setInputMode("address");
+                                            setSimulationError(null);
+                                            setUseWalletActorId(false);
+                                        }}
+                                        className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
+                                            inputMode === "address"
+                                                ? "bg-blue-600 text-white"
+                                                : "bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-750"
+                                        }`}
+                                        disabled={isPending}
+                                    >
+                                        Address
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setInputMode("actorId");
+                                            setSimulationError(null);
+                                            setResolvedActorId(null);
+                                        }}
+                                        className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
+                                            inputMode === "actorId"
+                                                ? "bg-blue-600 text-white"
+                                                : "bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-750"
+                                        }`}
+                                        disabled={isPending}
+                                    >
+                                        Actor ID
+                                    </button>
+                                </div>
+
+                                {inputMode === "address" ? (
+                                    <>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={addressInput}
+                                                onChange={(e) => {
+                                                    setAddressInput(e.target.value);
+                                                    setResolvedActorId(null);
+                                                    setSimulationError(null);
+                                                }}
+                                                placeholder="f1..., f3..., f4..., or 0x..."
+                                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                                                disabled={isPending || isResolving}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleResolveAddress}
+                                                disabled={!addressInput.trim() || isPending || isResolving}
+                                                className="px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                                            >
+                                                {isResolving ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <ArrowRight className="w-4 h-4" />
+                                                )}
+                                                Resolve
+                                            </button>
+                                        </div>
+                                        {resolvedActorId && (
+                                            <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-md border border-green-200 dark:border-green-800">
+                                                <p className="text-sm text-green-700 dark:text-green-300">
+                                                    Resolved Actor ID: <a href={actorExplorerUrl(resolvedActorId)} target="_blank" rel="noopener noreferrer" className="font-mono font-semibold underline hover:text-green-800 dark:hover:text-green-200">{resolvedActorId}</a>
+                                                </p>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <input
+                                        type="number"
+                                        value={actorId}
+                                        onChange={(e) => {
+                                            setActorId(e.target.value);
+                                            setUseWalletActorId(false);
+                                        }}
+                                        placeholder="e.g. 1000"
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        disabled={isPending || (useWalletActorId && isLoadingActorId)}
+                                    />
+                                )}
+
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    Enter the numeric Actor ID you wish to receive Datacap on. Your connected wallet will be tracked for burning FIL.
+                                    Your connected wallet will be tracked for burning FIL.
                                 </p>
                                 <p className="text-xs text-orange-600 dark:text-orange-400">
                                     Note: You must burn FIL through{" "}
@@ -271,7 +402,7 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
                             {simulationError && (
                                 <div className="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-md text-sm break-words">
                                     <p className="font-semibold mb-1">Transaction would fail</p>
-                                    <p>{simulationError.message || "Transaction simulation failed"}</p>
+                                    <p className="whitespace-pre-line">{simulationError.message || "Transaction simulation failed"}</p>
                                 </div>
                             )}
 
@@ -299,7 +430,7 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
                                         </button>
                                         <button
                                             onClick={handleSubmit}
-                                            disabled={!actorId || isPending || isSimulating || isCheckingReceiver}
+                                            disabled={!getEffectiveActorId() || isPending || isSimulating || isCheckingReceiver || isResolving}
                                             className={`flex-1 px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 ${(txError || simulationError)
                                                 ? 'bg-red-600 hover:bg-red-700'
                                                 : 'bg-blue-600 hover:bg-blue-700'

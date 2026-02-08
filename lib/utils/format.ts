@@ -1,4 +1,4 @@
-import { FILECOIN_GENESIS, SECONDS_PER_EPOCH } from "../constants";
+import { FILECOIN_GENESIS, SECONDS_PER_EPOCH, network } from "../constants";
 
 /**
  * Truncate an address for display (e.g., 0x1234...5678)
@@ -12,7 +12,7 @@ export function truncateAddress(address: string, chars = 4): string {
  * Format actor ID with f0 prefix
  */
 export function formatActorId(actorId: bigint | number): string {
-  return `f0${actorId}`;
+  return `${network.addressPrefix}0${actorId}`;
 }
 
 /**
@@ -109,7 +109,7 @@ function formatFilCore(attoFil: bigint, decimals = 4): FilFormatResult {
   const minVisible = 1 / Math.pow(10, decimals);
   if (fil >= 0.0001 && fil >= minVisible) {
     return {
-      formatted: `${fil.toLocaleString(undefined, {
+      formatted: `${fil.toLocaleString("en-US", {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals,
       })} FIL`,
@@ -122,7 +122,7 @@ function formatFilCore(attoFil: bigint, decimals = 4): FilFormatResult {
   const nanoFil = Number(attoFil) / 1e9;
   if (nanoFil >= 1) {
     return {
-      formatted: `${nanoFil.toLocaleString(undefined, {
+      formatted: `${nanoFil.toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })} nFIL`,
@@ -143,7 +143,7 @@ function formatFilCore(attoFil: bigint, decimals = 4): FilFormatResult {
   const picoFil = Number(attoFil) / 1e6;
   if (picoFil >= 1) {
     return {
-      formatted: `${picoFil.toLocaleString(undefined, {
+      formatted: `${picoFil.toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })} pFIL`,
@@ -164,7 +164,7 @@ function formatFilCore(attoFil: bigint, decimals = 4): FilFormatResult {
   const femtoFil = Number(attoFil) / 1e3;
   if (femtoFil >= 1) {
     return {
-      formatted: `${femtoFil.toLocaleString(undefined, {
+      formatted: `${femtoFil.toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })} fFIL`,
@@ -240,7 +240,7 @@ export function formatTimestamp(timestamp: number): string {
  */
 export function formatNumber(num: number | bigint, decimals = 0): string {
   const value = typeof num === "bigint" ? Number(num) : num;
-  return value.toLocaleString(undefined, {
+  return value.toLocaleString("en-US", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });

@@ -6,6 +6,7 @@ import { FilDisplay } from "@/components/ui/FilDisplay";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { RoundStatus, type RoundParticipant } from "@/types";
 import { formatActorId, formatDataCap } from "@/lib/utils/format";
+import { actorExplorerUrl } from "@/lib/constants";
 
 interface ParticipantTableProps {
   participants: RoundParticipant[];
@@ -97,7 +98,14 @@ export function ParticipantTable({ participants, roundStatus, isLoading, onRegis
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      <span className="font-mono text-gray-900 dark:text-gray-100">{formatActorId(p.datacapActorId)}</span>
+                      <a
+                        href={actorExplorerUrl(p.datacapActorId.toString())}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+                      >
+                        {formatActorId(p.datacapActorId)}
+                      </a>
                       <CopyButton value={p.datacapActorId.toString()} />
                     </div>
                   </td>

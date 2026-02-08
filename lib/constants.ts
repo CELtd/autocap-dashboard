@@ -13,9 +13,30 @@ export const config = {
   // Pagination
   participantsPageSize: Number(process.env.NEXT_PUBLIC_PARTICIPANTS_PAGE_SIZE || "100"),
 
-  // Explorer Links
-  payExplorerUrl: process.env.NEXT_PUBLIC_PAY_EXPLORER_URL || "https://pay.filecoin.cloud/accounts",
+  // Explorer Links (legacy, prefer network.payExplorerUrl)
+  payExplorerUrl: process.env.NEXT_PUBLIC_PAY_EXPLORER_URL || "https://pay.filecoin.cloud/calibration/accounts",
 } as const;
+
+// Network configuration (calibration vs mainnet)
+const _isMainnet = (process.env.NEXT_PUBLIC_NETWORK || "calibration") === "mainnet";
+export const network = {
+  isMainnet: _isMainnet,
+  addressPrefix: _isMainnet ? "f" : "t",
+  blockExplorerUrl: _isMainnet
+    ? "https://filecoin.blockscout.com"
+    : "https://filecoin-testnet.blockscout.com",
+  payExplorerUrl: _isMainnet
+    ? "https://pay.filecoin.cloud/mainnet/accounts"
+    : "https://pay.filecoin.cloud/calibration/accounts",
+} as const;
+
+/** Build a block explorer URL for an actor ID */
+export function actorExplorerUrl(actorId: string): string {
+  return `${network.blockExplorerUrl}/search-results?q=${network.addressPrefix}0${actorId}&redirect=true`;
+}
+
+// Base URL for the app (used for docs links, etc.)
+export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://filautocap.xyz";
 
 // Filecoin constants
 export const FILECOIN_GENESIS = new Date("2022-11-01T18:13:00Z");
