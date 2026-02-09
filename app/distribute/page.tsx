@@ -292,7 +292,7 @@ export default function DistributePage() {
               <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                  Minimum Allocation: 1 MiB ({MIN_DATACAP_ALLOCATION.toLocaleString()} bytes)
+                  Minimum Allocation: 1 MiB ({MIN_DATACAP_ALLOCATION.toLocaleString("en-US")} bytes)
                 </p>
                 <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
                   Allocations below 1 MiB will be skipped as they would revert on-chain.
@@ -330,7 +330,7 @@ export default function DistributePage() {
                 </p>
                 <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
                   A transaction for this round was already proposed on{" "}
-                  {new Date(previousProposal.proposedAt).toLocaleString()}.
+                  {new Date(previousProposal.proposedAt).toLocaleString("en-US")}.
                 </p>
                 <a
                   href={`https://safe.filecoin.io/transactions/queue?safe=fil:${SAFE_ADDRESS}`}
@@ -435,7 +435,7 @@ export default function DistributePage() {
                     </p>
                     {distributionData.testMode && (
                       <p className="text-sm text-purple-700 dark:text-purple-300">
-                        <strong>Amount Override:</strong> All allocations are set to 1 MiB ({MIN_DATACAP_ALLOCATION.toLocaleString()} bytes).
+                        <strong>Amount Override:</strong> All allocations are set to 1 MiB ({MIN_DATACAP_ALLOCATION.toLocaleString("en-US")} bytes).
                       </p>
                     )}
                     {distributionData.testOverrideActorId && (
@@ -529,7 +529,7 @@ export default function DistributePage() {
                         <div className="flex justify-between">
                           <span className="text-gray-500 dark:text-gray-400">Amount (bytes):</span>
                           <span className="font-mono text-gray-700 dark:text-gray-300">
-                            {BigInt(tx.meta.allocatedDatacap).toLocaleString()}
+                            {BigInt(tx.meta.allocatedDatacap).toLocaleString("en-US")}
                           </span>
                         </div>
                         {distributionData.testOverrideActorId && tx.meta.datacapActorIdOriginal !== tx.meta.datacapActorId && (
@@ -544,7 +544,7 @@ export default function DistributePage() {
                           <div className="flex justify-between text-purple-600 dark:text-purple-400">
                             <span>Original Amount:</span>
                             <span className="font-mono">
-                              {BigInt(tx.meta.allocatedDatacapOriginal).toLocaleString()} bytes
+                              {BigInt(tx.meta.allocatedDatacapOriginal).toLocaleString("en-US")} bytes
                             </span>
                           </div>
                         )}

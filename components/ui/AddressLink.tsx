@@ -3,14 +3,14 @@
 import { ExternalLink } from "lucide-react";
 import { truncateAddress } from "@/lib/utils/format";
 import { CopyButton } from "./CopyButton";
-import { config } from "@/lib/constants";
+import { network } from "@/lib/constants";
 
 interface AddressLinkProps {
   address: string;
 }
 
 export function AddressLink({ address }: AddressLinkProps) {
-  const explorerUrl = `${config.payExplorerUrl}/${address}`;
+  const explorerUrl = `${network.blockExplorerUrl}/address/${address}`;
 
   return (
     <div className="flex items-center gap-1.5">

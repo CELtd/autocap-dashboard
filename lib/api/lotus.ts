@@ -1,4 +1,5 @@
 import { LOTUS_RPC_URL } from "../constants";
+import { isActorNotFoundError, ACTOR_NOT_FOUND_MESSAGE } from "../utils/errors";
 
 interface LotusRpcResponse<T> {
   jsonrpc: string;
@@ -248,6 +249,75 @@ export async function getActorIdFromEvmAddress(evmAddress: string): Promise<stri
 }
 
 /**
+ * Resolve any Filecoin address or EVM address to a numeric actor ID.
+ *
+ * Supported formats:
+ * - Plain numeric string: "1433" -> treated as actor ID directly
+ * - f0/t0 (ID address): "f01433" -> extracts numeric ID
+ * - f1/t1 (secp256k1): resolved via Filecoin.StateLookupID
+ * - f2/t2 (actor): resolved via Filecoin.StateLookupID
+ * - f3/t3 (BLS): resolved via Filecoin.StateLookupID
+ * - f4/t4 (delegated): resolved via Filecoin.StateLookupID
+ * - 0x (EVM): converted to f410 first, then resolved via StateLookupID
+ *
+ * @param address - Any supported address format
+ * @returns The numeric actor ID as a string (e.g., "1433")
+ */
+export async function resolveAddressToActorId(address: string): Promise<string> {
+  const trimmed = address.trim();
+
+  // Plain numeric string -> treat as actor ID directly
+  if (/^\d+$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  // f0/t0 ID address -> extract numeric ID
+  const idMatch = trimmed.match(/^[ft]0(\d+)$/i);
+  if (idMatch) {
+    return idMatch[1];
+  }
+
+  // 0x EVM address -> convert to f410 first, then resolve
+  if (/^0x[0-9a-fA-F]{40}$/i.test(trimmed)) {
+    try {
+      return await getActorIdFromEvmAddress(trimmed);
+    } catch (err) {
+      if (err instanceof Error && isActorNotFoundError(err.message)) {
+        throw new Error(ACTOR_NOT_FOUND_MESSAGE);
+      }
+      throw err;
+    }
+  }
+
+  // f1/f2/f3/f4 or t1/t2/t3/t4 addresses -> resolve via StateLookupID
+  if (/^[ft][1-4]/i.test(trimmed)) {
+    try {
+      const idAddress = await lotusRpc<string>(
+        "Filecoin.StateLookupID",
+        [trimmed, null]
+      );
+
+      const resolvedMatch = idAddress.match(/^[ft]0(\d+)$/i);
+      if (!resolvedMatch) {
+        throw new Error(`Failed to resolve address to actor ID: ${idAddress}`);
+      }
+
+      return resolvedMatch[1];
+    } catch (err) {
+      if (err instanceof Error && isActorNotFoundError(err.message)) {
+        throw new Error(ACTOR_NOT_FOUND_MESSAGE);
+      }
+      throw err;
+    }
+  }
+
+  throw new Error(
+    `Unsupported address format: "${trimmed}". ` +
+    `Supported: numeric actor ID, f0/f1/f2/f3/f4 addresses, or 0x EVM addresses.`
+  );
+}
+
+/**
  * @deprecated Use addressToClientBytes() or encodeEvmAddress() instead
  * This function was incorrectly used for f0 addresses
  */
@@ -330,6 +400,11 @@ export async function checkDatacapReceiver(
       return { canReceive: true, exitCode };
     }
 
+    // Check for actor-not-found in the error string
+    if (result.Error && isActorNotFoundError(result.Error)) {
+      return { canReceive: false, error: ACTOR_NOT_FOUND_MESSAGE, exitCode };
+    }
+
     // Provide user-friendly error messages based on exit code
     let errorMessage: string;
     switch (exitCode) {
@@ -346,6 +421,9 @@ export async function checkDatacapReceiver(
     return { canReceive: false, error: errorMessage, exitCode };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    if (isActorNotFoundError(message)) {
+      return { canReceive: false, error: ACTOR_NOT_FOUND_MESSAGE };
+    }
     return { canReceive: false, error: `Failed to check actor: ${message}` };
   }
 }
