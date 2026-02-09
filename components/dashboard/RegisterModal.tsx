@@ -249,26 +249,37 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
 
                         <div className="space-y-4">
                             {isConnected && address && (
-                                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Wallet className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                                            <span className="text-sm text-gray-600 dark:text-gray-300">
-                                                Connected: <span className="font-mono font-medium">{truncateAddress(address)}</span>
-                                            </span>
+                                <div className="space-y-2">
+                                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Burn Address
+                                    </div>
+                                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Wallet className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                                <span className="text-sm text-gray-600 dark:text-gray-300">
+                                                    Connected: <span className="font-mono font-medium">{truncateAddress(address)}</span>
+                                                </span>
+                                            </div>
+                                            <ConnectButton.Custom>
+                                                {({ openAccountModal }) => (
+                                                    <button
+                                                        onClick={openAccountModal}
+                                                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                                                    >
+                                                        Change
+                                                    </button>
+                                                )}
+                                            </ConnectButton.Custom>
                                         </div>
-                                        <ConnectButton.Custom>
-                                            {({ openAccountModal }) => (
-                                                <button
-                                                    onClick={openAccountModal}
-                                                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
-                                                >
-                                                    Change
-                                                </button>
-                                            )}
-                                        </ConnectButton.Custom>
                                     </div>
                                 </div>
+                            )}
+
+                            {isConnected && address && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Your connected wallet will be tracked for FIL burns.
+                                </p>
                             )}
 
                             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-100 dark:border-blue-800">
@@ -280,7 +291,7 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Datacap Recipient
+                                        DataCap Recipient Address
                                     </label>
                                     {isConnected && address && (
                                         <button
@@ -381,9 +392,6 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
                                     />
                                 )}
 
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    Your connected wallet will be tracked for burning FIL.
-                                </p>
                                 <p className="text-xs text-orange-600 dark:text-orange-400">
                                     Note: You must burn FIL through{" "}
                                     <a
@@ -416,8 +424,20 @@ export function RegisterModal({ isOpen, onClose, roundId, registrationFee }: Reg
 
                             <div className="pt-4">
                                 {!isConnected ? (
-                                    <div className="flex justify-center">
-                                        <ConnectButton />
+                                    <div className="flex flex-col items-center gap-2">
+                                        <ConnectButton.Custom>
+                                            {({ openConnectModal }) => (
+                                                <button
+                                                    onClick={openConnectModal}
+                                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                                                >
+                                                    Connect Burn Address Wallet
+                                                </button>
+                                            )}
+                                        </ConnectButton.Custom>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                                            Your connected wallet will be tracked for FIL burns.
+                                        </p>
                                     </div>
                                 ) : (
                                     <div className="flex gap-3">

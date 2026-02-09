@@ -53,19 +53,19 @@ export function ParticipantTable({ participants, roundStatus, isLoading, onRegis
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-12">#</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   <span className="inline-flex items-center">
-                    Participant Burn Address
+                    Burn Address
                     <InfoTooltip
-                      title="Participant Burn Address"
+                      title="Burn Address"
                       content="The wallet address that will be checked for burned FIL through a Filecoin Pay contract denominated in FIL settled during the current round."
                     />
                   </span>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   <span className="inline-flex items-center">
-                    Participant DataCap Address
+                    DataCap Recipient Address
                     <InfoTooltip
-                      title="Participant DataCap Address"
-                      content="The Participant DataCap address is the address of the wallet where the participant wants to receive DataCap won in this round."
+                      title="DataCap Recipient Address"
+                      content="The address of the wallet where the participant wants to receive DataCap won in this round."
                     />
                   </span>
                 </th>
@@ -74,7 +74,7 @@ export function ParticipantTable({ participants, roundStatus, isLoading, onRegis
                     FIL Burned
                     <InfoTooltip
                       title="FIL Burned"
-                      content="Real-time tracker of the amount of FIL burned by Participant Address via a Filecoin Pay contract during the current round."
+                      content="Real-time tracker of the amount of FIL burned by Participant Burn Address via a Filecoin Pay contract during the current round."
                     />
                   </span>
                 </th>
@@ -83,7 +83,7 @@ export function ParticipantTable({ participants, roundStatus, isLoading, onRegis
                     {allocationHeader}
                     <InfoTooltip
                       title={allocationHeader}
-                      content="Real-time tracker of the current amount of DataCap the DataCap Actor ID will receive (if the round would complete as it is) based on the FIL burned by the Participant Address."
+                      content="Real-time tracker of the current amount of DataCap the Participant DC Receipient Address will receive (if the round would complete as it is) based on the FIL burned by the Participant Burn Address."
                     />
                   </span>
                 </th>
