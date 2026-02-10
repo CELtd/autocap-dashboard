@@ -18,8 +18,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Filecoin Autocap",
-  description: "Filecoin Autocap round monitoring dashboard",
+  title: "Filecoin AutoCap",
+  description: "Filecoin AutoCap round monitoring dashboard",
   icons: {
     icon: "/logo.svg",
     apple: "/logo.svg",

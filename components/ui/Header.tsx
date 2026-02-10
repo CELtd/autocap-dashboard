@@ -16,11 +16,11 @@ export function Header() {
                 <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                     <img
                         src="/logo.svg"
-                        alt="Filecoin Autocap Logo"
+                        alt="Filecoin AutoCap Logo"
                         className="w-8 h-8 md:w-9 md:h-9"
                     />
                     <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 hidden sm:block">
-                        Filecoin Autocap
+                        Filecoin AutoCap
                     </h1>
                 </Link>
 

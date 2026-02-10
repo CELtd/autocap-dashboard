@@ -74,7 +74,7 @@ export default function Dashboard() {
                   rel="noopener noreferrer"
                   className="flex-1 text-sm font-semibold text-amber-900 dark:text-amber-100 hover:underline"
                 >
-                  Important: Filecoin Pay rails denominated in FIL token ONLY are eligible for DC allocation via Autocap.
+                  Important: Filecoin Pay rails denominated in FIL token ONLY are eligible for DC allocation via AutoCap.
                 </a>
                 <button onClick={() => setShowFilNotice(false)} className="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 flex-shrink-0">
                   <X className="w-4 h-4" />
