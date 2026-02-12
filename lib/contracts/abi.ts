@@ -103,4 +103,31 @@ export const autoCapAbi = [
     inputs: [],
     outputs: [{ name: "", type: "address" }],
   },
+  // Admin functions
+  {
+    name: "createRound",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "_startTime", type: "uint256" },
+      { name: "_endTime", type: "uint256" },
+      { name: "_registrationFee", type: "uint256" },
+      { name: "_totalDatacap", type: "uint256" },
+    ],
+    outputs: [{ name: "roundId", type: "uint256" }],
+  },
+  {
+    name: "closeRound",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "_roundId", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    name: "withdrawFees",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
 ] as const;

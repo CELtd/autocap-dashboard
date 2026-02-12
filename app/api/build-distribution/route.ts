@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { encodeFunctionData } from "viem";
 import { filecoinIdToClientAddressBytes, lookupRobustAddress } from "@/lib/api/lotus";
 import { metaAllocatorAbi } from "@/lib/contracts/metaAllocatorAbi";
@@ -82,21 +82,49 @@ const TEST_EXTRA_WINNER_ACTOR_ID = "f099999"; // Fake actor ID for display
 
 // =============================================================================
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // 1. Compute latest round and most recent closed round directly (avoid self-fetch)
+    // 1. Compute latest round and resolve target round
     const latestRoundId = await getCurrentRoundId();
     const latestRoundData = await getRoundData(latestRoundId);
 
-    let targetRoundData: Round | null =
-      latestRoundData.status === RoundStatus.Closed ? latestRoundData : null;
+    // Check for optional ?roundId=N query param
+    const requestedRoundId = request.nextUrl.searchParams.get("roundId");
 
-    if (!targetRoundData) {
-      for (let id = latestRoundId - 1; id >= 1; id--) {
-        const candidate = await getRoundData(id);
-        if (candidate.status === RoundStatus.Closed) {
-          targetRoundData = candidate;
-          break;
+    let targetRoundData: Round | null = null;
+
+    if (requestedRoundId) {
+      const roundId = parseInt(requestedRoundId, 10);
+      if (isNaN(roundId) || roundId < 1 || roundId > latestRoundId) {
+        return NextResponse.json(
+          { error: `Invalid roundId: must be between 1 and ${latestRoundId}` },
+          { status: 400 }
+        );
+      }
+      const candidate = await getRoundData(roundId);
+      if (candidate.status !== RoundStatus.Closed) {
+        return NextResponse.json(
+          {
+            error: `Round ${roundId} is not closed (status: ${candidate.status})`,
+            latestRoundId: latestRoundData.id,
+            latestRoundStatus: latestRoundData.status,
+          },
+          { status: 400 }
+        );
+      }
+      targetRoundData = candidate;
+    } else {
+      // Default: find latest closed round
+      targetRoundData =
+        latestRoundData.status === RoundStatus.Closed ? latestRoundData : null;
+
+      if (!targetRoundData) {
+        for (let id = latestRoundId - 1; id >= 1; id--) {
+          const candidate = await getRoundData(id);
+          if (candidate.status === RoundStatus.Closed) {
+            targetRoundData = candidate;
+            break;
+          }
         }
       }
     }

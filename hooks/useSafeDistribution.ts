@@ -56,7 +56,7 @@ interface UseSafeDistributionReturn {
   error: Error | null;
   distributionData: BuildDistributionResponse | null;
   safeTxHash: string | null;
-  fetchDistribution: () => Promise<void>;
+  fetchDistribution: (roundId?: number) => Promise<void>;
   proposeDistribution: () => Promise<void>;
   reset: () => void;
 }
@@ -78,12 +78,15 @@ export function useSafeDistribution(): UseSafeDistributionReturn {
     setSafeTxHash(null);
   }, []);
 
-  const fetchDistribution = useCallback(async () => {
+  const fetchDistribution = useCallback(async (roundId?: number) => {
     setStatus("fetching");
     setError(null);
 
     try {
-      const response = await fetch("/api/build-distribution");
+      const url = roundId
+        ? `/api/build-distribution?roundId=${roundId}`
+        : "/api/build-distribution";
+      const response = await fetch(url);
       const data = await response.json();
 
       if (!response.ok) {

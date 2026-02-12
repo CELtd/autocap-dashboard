@@ -24,7 +24,7 @@ const UNITS = ["Bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"];
 const DATACAP_DECIMALS = 18n;
 const DATACAP_DIVISOR = 10n ** DATACAP_DECIMALS;
 
-export function formatDataCap(datacapWithDecimals: bigint, decimals = 2): string {
+export function formatDataCap(datacapWithDecimals: bigint, decimals?: number): string {
   if (datacapWithDecimals === 0n) return "0 Bytes";
 
   // Convert from 18-decimal format to actual bytes
@@ -42,7 +42,9 @@ export function formatDataCap(datacapWithDecimals: bigint, decimals = 2): string
     unitIndex++;
   }
 
-  return `${value.toFixed(decimals)} ${UNITS[unitIndex]}`;
+  // Auto-select precision: enough decimals to avoid round-trip loss
+  const dp = decimals ?? (value % 1 === 0 ? 0 : 4);
+  return `${value.toFixed(dp)} ${UNITS[unitIndex]}`;
 }
 
 /**
