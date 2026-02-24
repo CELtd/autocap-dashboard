@@ -39,15 +39,15 @@ export function actorExplorerUrl(actorId: string): string {
 export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://filautocap.xyz";
 
 // Filecoin constants
-export const FILECOIN_GENESIS = new Date("2022-11-01T18:13:00Z");
+export const FILECOIN_GENESIS = new Date("2020-08-24T22:00:00Z");
 export const SECONDS_PER_EPOCH = 30;
 export const NATIVE_FIL_TOKEN = "0x0000000000000000000000000000000000000000";
 
-// Safe & MetaAllocator constants (Filecoin Calibration)
-export const SAFE_ADDRESS = "0xdb837774Fb9715F1AE70EFAfF2D1D4e76de8884b";
-export const METAALLOCATOR_ADDRESS = "0xeE44Fa7Af2A8ad8aB222e4401EF8Ed5A8e18bD09";
-export const LOTUS_RPC_URL = "https://calibration.filecoin.chain.love/rpc/v1";
+// Safe & MetaAllocator constants (Filecoin Mainnet)
+export const SAFE_ADDRESS = "0x7717ee38C1fA818d843060429f4dF2BAF3b201AE";
+export const METAALLOCATOR_ADDRESS = "0x1e15357F252FF44d2CebEA99FDB1E0858018cCE1";
+export const LOTUS_RPC_URL = "https://api.node.glif.io/rpc/v1";
 export const MIN_DATACAP_ALLOCATION = 1048576; // 1 MiB in bytes
-export const CHAIN_ID = 314159;
-// Safe Transaction Service URL for Filecoin Calibration
-export const SAFE_TX_SERVICE_URL = "https://transaction-testnet.safe.filecoin.io";
+export const CHAIN_ID = 314;
+// Safe Transaction Service URL for Filecoin Mainnet
+export const SAFE_TX_SERVICE_URL = "https://transaction.safe.filecoin.io";
