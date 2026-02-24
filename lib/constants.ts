@@ -2,7 +2,7 @@
 export const config = {
   // Contract Configuration
   autoCapAddress: process.env.NEXT_PUBLIC_AUTOCAP_ADDRESS || "0x0000000000000000000000000000000000000000",
-  rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || "https://api.calibration.node.glif.io/rpc/v1",
+  rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || "https://api.node.glif.io/rpc/v1",
 
   // Subgraph Configuration
   subgraphUrl: process.env.NEXT_PUBLIC_SUBGRAPH_URL || "https://api.goldsky.com/api/public/project_clq...",
@@ -14,11 +14,11 @@ export const config = {
   participantsPageSize: Number(process.env.NEXT_PUBLIC_PARTICIPANTS_PAGE_SIZE || "100"),
 
   // Explorer Links (legacy, prefer network.payExplorerUrl)
-  payExplorerUrl: process.env.NEXT_PUBLIC_PAY_EXPLORER_URL || "https://pay.filecoin.cloud/calibration/accounts",
+  payExplorerUrl: process.env.NEXT_PUBLIC_PAY_EXPLORER_URL || "https://pay.filecoin.cloud/mainnet/accounts",
 } as const;
 
 // Network configuration (calibration vs mainnet)
-const _isMainnet = (process.env.NEXT_PUBLIC_NETWORK || "calibration") === "mainnet";
+const _isMainnet = (process.env.NEXT_PUBLIC_NETWORK || "mainnet") === "mainnet";
 export const network = {
   isMainnet: _isMainnet,
   addressPrefix: _isMainnet ? "f" : "t",
