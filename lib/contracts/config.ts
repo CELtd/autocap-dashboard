@@ -2,14 +2,14 @@ import { createPublicClient, http, type Address, type Chain } from "viem";
 import { config } from "../constants";
 import { autoCapAbi } from "./abi";
 
-// Filecoin Calibration Testnet chain definition
-export const filecoinCalibration: Chain = {
-  id: 314159,
-  name: "Filecoin Calibration",
+// Filecoin Mainnet chain definition
+export const filecoinMainnet: Chain = {
+  id: 314,
+  name: "Filecoin",
   nativeCurrency: {
     decimals: 18,
-    name: "testnet filecoin",
-    symbol: "tFIL",
+    name: "filecoin",
+    symbol: "FIL",
   },
   rpcUrls: {
     default: { http: [config.rpcUrl] },
@@ -18,15 +18,15 @@ export const filecoinCalibration: Chain = {
   blockExplorers: {
     default: {
       name: "Blockscout",
-      url: "https://filecoin-testnet.blockscout.com",
+      url: "https://filecoin.blockscout.com",
     },
   },
-  testnet: true,
+  testnet: false,
 };
 
 // Create public client for reading contract data
 export const publicClient = createPublicClient({
-  chain: filecoinCalibration,
+  chain: filecoinMainnet,
   transport: http(config.rpcUrl),
 });
 
